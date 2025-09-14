@@ -8,8 +8,15 @@ import Commander from './components/Commander';
 import Workspace from './components/Workspace';
 import StatusBar from './components/StatusBar';
 import Storage from './components/Storage';
+import * as Path from 'path';
+import * as Url from 'url';
 
 export function activate(context: Vscode.ExtensionContext) {
+    const root = context.extensionPath;
+    const dts = Path.join(root, 'assets', 'dts', 'lib.autodn.d.ts');
+    const url = Url.pathToFileURL(dts);
+    console.log(url.href);
+
     const workspace = new Workspace();
     const registry = new Registry(context);
     const storage = new Storage(context);

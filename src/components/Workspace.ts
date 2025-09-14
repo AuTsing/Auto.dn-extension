@@ -66,22 +66,15 @@ export default class Workspace {
 
         const denoJson = await this.getDenoJson();
         const imports = Object.values(denoJson.imports ?? {});
-        const localImports = imports.filter(
-            it => typeof it === 'string' && it.startsWith('.'),
-        ) as string[];
-        const localImportsAbsolutePaths = localImports.map(it =>
-            Path.resolve(workspaceFolder.uri.fsPath, it),
-        );
+        const localImports = imports.filter(it => typeof it === 'string' && it.startsWith('.')) as string[];
+        const localImportsAbsolutePaths = localImports.map(it => Path.resolve(workspaceFolder.uri.fsPath, it));
         for (const path of localImportsAbsolutePaths) {
             const name = Path.basename(path);
             const files = await this.readdirRecursively(path, 'Projects/' + name);
             workspaceFiles.push(...files);
         }
 
-        const files = await this.readdirRecursively(
-            workspaceFolder.uri.fsPath,
-            'Projects/' + workspaceFolder.name,
-        );
+        const files = await this.readdirRecursively(workspaceFolder.uri.fsPath, 'Projects/' + workspaceFolder.name);
         workspaceFiles.push(...files);
 
         return workspaceFiles;
@@ -110,7 +103,7 @@ export default class Workspace {
             return {};
         }
         const denoJsonContent = await FsPromises.readFile(denoJsonPath, { encoding: 'utf-8' });
-        const denoJson = JSON.parse(denoJsonContent);
+        const denoJson = JSON.parse(denoJsonContent) satisfies DenoJson;
         return denoJson;
     }
 }
