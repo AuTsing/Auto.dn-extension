@@ -1,6 +1,6 @@
 import * as Vscode from 'vscode';
-import Workspace from './Workspace';
 import Output from './Output';
+import { NAME, NS } from '../values/Constants';
 
 export class StatusItem {
     prefix: string;
@@ -102,23 +102,21 @@ export default class StatusBar {
         StatusBar.instance.refresh();
     }
 
-    private readonly workspace: Workspace;
     private readonly statusBarItem: Vscode.StatusBarItem;
     private readonly statusItems: StatusItem[];
     private refresher: NodeJS.Timer | null;
     private runningStatusItem: StatusItem | null;
 
-    constructor(workspace: Workspace) {
-        this.workspace = workspace;
+    constructor() {
         this.statusBarItem = Vscode.window.createStatusBarItem(Vscode.StatusBarAlignment.Left);
         this.statusItems = [];
         this.refresher = null;
         this.runningStatusItem = new StatusItem('', this.statusItems, '$(loading~spin)', '运行中');
-        const defaultStatusItem = new StatusItem('Denofa', this.statusItems, '🦕');
+        const defaultStatusItem = new StatusItem(NAME, this.statusItems, '🦕');
         this.statusItems.push(defaultStatusItem);
         this.statusBarItem.text = defaultStatusItem.display();
-        this.statusBarItem.tooltip = 'Denofa';
-        this.statusBarItem.command = 'denofa.clickStatusBarItem';
+        this.statusBarItem.tooltip = NAME;
+        this.statusBarItem.command = `${NS}.clickStatusBarItem`;
     }
 
     private refresh() {
@@ -133,31 +131,34 @@ export default class StatusBar {
         }
     }
 
-    toggleStatusBar() {
+    handleShowStatusBar() {
         try {
-            const denofaConfig = this.workspace.getDenofaConfiguration();
-            if (denofaConfig.get('enable') === true && this.refresher === null) {
-                this.statusBarItem.show();
-                this.refresher = setInterval(() => this.refresh(), 1000);
-            } else if (denofaConfig.get('enable') !== true && this.refresher !== null) {
-                this.statusBarItem.hide();
-                clearInterval(Number(this.refresher));
-                this.refresher = null;
-            }
+            this.statusBarItem.show();
+            this.refresher = setInterval(() => this.refresh(), 1000);
         } catch (e) {
             Output.eprintln('启用状态栏失败:', e);
         }
     }
 
+    handleHideStatusBar() {
+        try {
+            this.statusBarItem.hide();
+            clearInterval(Number(this.refresher));
+            this.refresher = null;
+        } catch (e) {
+            Output.eprintln('禁用状态栏失败:', e);
+        }
+    }
+
     handleClickStatusBarItem() {
         if (this.runningStatusItem && this.statusItems.includes(this.runningStatusItem)) {
-            Vscode.commands.executeCommand('denofa.stop');
+            Vscode.commands.executeCommand(`${NS}.stop`);
             return;
         }
         if (this.statusItems.length > 1) {
-            Vscode.commands.executeCommand('denofa.disconnect');
+            Vscode.commands.executeCommand(`${NS}.disconnect`);
             return;
         }
-        Vscode.commands.executeCommand('denofa.connect');
+        Vscode.commands.executeCommand(`${NS}.connect`);
     }
 }

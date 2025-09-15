@@ -6,7 +6,6 @@ import * as Url from 'url';
 import * as Jsonfile from 'jsonfile';
 import Output from './Output';
 import Workspace from './Workspace';
-import { DENO_CMD_CACHE, DENO_CMD_RESTART } from '../values/Constants';
 import Asker from './Asker';
 import Storage from './Storage';
 import StatusBar from './StatusBar';
@@ -29,6 +28,16 @@ export default class Initializer {
         const dts = Path.join(root, 'assets', 'dts', 'lib.autodn.d.ts');
         const url = Url.pathToFileURL(dts);
         return url.href;
+    }
+
+    async handleDidChangeConfiguration() {
+        const config = this.workspace.getConfiguration();
+        if (config.get('enable') === true) {
+            StatusBar.instance?.handleShowStatusBar();
+            await this.updateDts();
+        } else {
+            StatusBar.instance?.handleHideStatusBar();
+        }
     }
 
     async initializeWorkspace() {
@@ -56,12 +65,12 @@ export default class Initializer {
                 Output.println('main.ts/main.js 已存在，跳过创建');
             }
 
-            const denofaConfig = this.workspace.getDenofaConfiguration();
-            if (denofaConfig.get('enable') !== true) {
-                await denofaConfig.update('enable', true);
+            const config = this.workspace.getConfiguration();
+            if (config.get('enable') !== true) {
+                await config.update('enable', true);
                 await new Promise(resolve => setTimeout(() => resolve(null), 1000));
             } else {
-                Output.println('Denofa 插件已开启，跳过开启');
+                Output.println('插件已开启，跳过开启');
             }
             const denoConfig = this.workspace.getDenoConfiguration();
             if (denoConfig.get('enable') !== true) {
@@ -71,24 +80,14 @@ export default class Initializer {
                 Output.println('Deno 插件已开启，跳过开启');
             }
 
-            Output.printlnAndShow('Denofa 工作区初始化成功');
+            Output.printlnAndShow('工作区初始化成功');
         } catch (err) {
-            Output.eprintln('Denofa 工作区初始化失败:', err);
+            Output.eprintln('工作区初始化失败:', err);
         }
-    }
-
-    async initializeExtension() {
-        StatusBar.instance?.toggleStatusBar();
-        await this.updateDts();
     }
 
     async updateDts() {
         try {
-            const denofaConfig = this.workspace.getDenofaConfiguration();
-            if (denofaConfig.get('enable') !== true) {
-                return;
-            }
-
             const updateDts = this.storage.getUpdateDts();
             if (!updateDts) {
                 return;
@@ -101,7 +100,7 @@ export default class Initializer {
                 return;
             }
 
-            const update = await this.asker.askForIsUpdateDts(latestVersion);
+            const update = await this.asker.askForIsUpdateDts();
             if (!update) {
                 return;
             }
@@ -112,6 +111,9 @@ export default class Initializer {
             const workspaceFolder = this.workspace.getWorkspaceFolder();
             const denoJsonPath = Path.join(workspaceFolder.uri.fsPath, 'deno.json');
             await Jsonfile.writeFile(denoJsonPath, denoJson, { spaces: 4 });
+
+            await new Promise(resolve => setTimeout(() => resolve(null), 1000));
+            await Vscode.commands.executeCommand('deno.client.restart');
 
             Output.printlnAndShow('更新类型定义文件成功');
         } catch (err) {

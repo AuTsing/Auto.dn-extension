@@ -31,7 +31,7 @@
             },
             {
                 "command": "autodn.updateDts",
-                "title": "Autodn: 检查更新类型定义文件"
+                "title": "Autodn: 更新类型定义文件"
             },
             {
                 "command": "autodn.connect",

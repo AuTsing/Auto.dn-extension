@@ -11,7 +11,7 @@ export default class Asker {
     private validateWsUrl(url: string) {
         if (
             !/^ws:\/\/(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5]):([0-9]|[1-9]\d|[1-9]\d{2}|[1-9]\d{3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$/.test(
-                url
+                url,
             )
         ) {
             throw new Error('WS服务器URL格式不正确');
@@ -19,7 +19,12 @@ export default class Asker {
     }
 
     async askForWsUrl(): Promise<string> {
-        const url = (await Vscode.window.showInputBox({ prompt: '请输入WS服务器URL', value: 'ws://192.168.', placeHolder: 'ws://192.168.' })) ?? '';
+        const url =
+            (await Vscode.window.showInputBox({
+                prompt: '请输入WS服务器URL',
+                value: 'ws://192.168.',
+                placeHolder: 'ws://192.168.',
+            })) ?? '';
         this.validateWsUrl(url);
         return url;
     }
@@ -57,8 +62,14 @@ export default class Asker {
         return dir[0].fsPath;
     }
 
-    async askForIsUpdateDts(ver: string): Promise<boolean> {
-        const selection = (await Vscode.window.showInformationMessage(`声明文件有新版本 ${ver}，是否更新工作区`, '是', '否', '不再提示')) ?? '否';
+    async askForIsUpdateDts(): Promise<boolean> {
+        const selection =
+            (await Vscode.window.showInformationMessage(
+                `Autodn命名空间尚未添加至工程，无法使用补全，是否将类型定义文件添加至工程？`,
+                '是',
+                '否',
+                '不再提示',
+            )) ?? '否';
         if (selection === '不再提示') {
             this.storage.setUpdateDts(false);
         }

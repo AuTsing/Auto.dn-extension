@@ -1,4 +1,2 @@
-const { toast, log } = Android.io;
-
-toast('Hello, world!');
-log.info('Hello, world!');
+Autodn.log.info('Hello, Autodn!');
+Autodn.toast('Hello, Autodn!');

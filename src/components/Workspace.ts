@@ -2,7 +2,7 @@ import * as Vscode from 'vscode';
 import * as FsPromises from 'fs/promises';
 import * as Fs from 'fs';
 import * as Path from 'path';
-import { DENOFA_EXTENSION_ID, DENOFA_NS, DENO_EXTENSION_ID, DENO_NS } from '../values/Constants';
+import { NS, DENO_EXTENSION_ID, DENO_NS } from '../values/Constants';
 
 export interface WorkspaceFile {
     name: string;
@@ -88,12 +88,8 @@ export default class Workspace {
         return Vscode.workspace.getConfiguration(DENO_NS);
     }
 
-    getDenofaConfiguration(): Vscode.WorkspaceConfiguration {
-        const denofaExtension = Vscode.extensions.getExtension(DENOFA_EXTENSION_ID);
-        if (!denofaExtension) {
-            throw new Error('未检测到 Denofa 插件，请先安装插件后再进行操作');
-        }
-        return Vscode.workspace.getConfiguration(DENOFA_NS);
+    getConfiguration(): Vscode.WorkspaceConfiguration {
+        return Vscode.workspace.getConfiguration(NS);
     }
 
     async getDenoJson(): Promise<DenoJson> {

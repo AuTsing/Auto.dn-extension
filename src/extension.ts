@@ -8,25 +8,18 @@ import Commander from './components/Commander';
 import Workspace from './components/Workspace';
 import StatusBar from './components/StatusBar';
 import Storage from './components/Storage';
-import * as Path from 'path';
-import * as Url from 'url';
 
 export function activate(context: Vscode.ExtensionContext) {
-    const root = context.extensionPath;
-    const dts = Path.join(root, 'assets', 'dts', 'lib.autodn.d.ts');
-    const url = Url.pathToFileURL(dts);
-    console.log(url.href);
-
     const workspace = new Workspace();
     const registry = new Registry(context);
-    const storage = new Storage(context);
+    const storage = new Storage(context, workspace);
     const asker = new Asker(storage);
-    const initializer = new Initializer(context, workspace, asker, storage);
     const commander = new Commander();
     const wsd = new Wsd(asker, commander, workspace, storage);
+    const initializer = new Initializer(context, workspace, asker, storage);
 
     Output.instance = new Output();
-    StatusBar.instance = new StatusBar(workspace);
+    StatusBar.instance = new StatusBar();
 
     registry.register('initializeWorkspace', () => initializer.initializeWorkspace());
     registry.register('updateDts', () => initializer.updateDts());
@@ -37,9 +30,7 @@ export function activate(context: Vscode.ExtensionContext) {
     registry.register('upload', () => wsd.handleUpload());
     registry.register('snapshot', () => wsd.handleSnapshot());
     registry.register('clickStatusBarItem', () => StatusBar.instance?.handleClickStatusBarItem());
-    registry.listenOnDidChangeConfiguration(() => initializer.initializeExtension());
-
-    initializer.initializeExtension();
+    registry.listenOnDidChangeConfiguration(() => initializer.handleDidChangeConfiguration());
 }
 
 export function deactivate() {}
