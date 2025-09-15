@@ -1,0 +1,22 @@
+name: publish
+
+on:
+    push:
+        tags:
+            - 'v*.*.*'
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v5
+              with:
+                  node-version: 22
+
+            - name: Publish
+              run: |
+                  npm install
+                  npx @vscode/vsce publish --pat ${{ secrets.VSCE_TOKEN }}
+                  npx ovsx publish -p ${{ secrets.OVSX_TOKEN }}
