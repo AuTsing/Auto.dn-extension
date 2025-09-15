@@ -2,7 +2,7 @@
     "name": "autodn-extension",
     "displayName": "Auto.dn",
     "description": "The VSCode extension for Auto.dn",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "publisher": "autsing",
     "repository": "https://github.com/AuTsing/Auto.dn-extension",
     "icon": "./assets/images/logo_128_128.png",
