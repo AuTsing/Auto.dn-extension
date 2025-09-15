@@ -1,5 +1,5 @@
 {
-    "name": "denofa-vscode-ext",
+    "name": "autodn-extension",
     "displayName": "Auto.dn",
     "description": "The VSCode extension for Auto.dn",
     "version": "0.2.2",
