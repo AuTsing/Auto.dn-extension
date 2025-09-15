@@ -1,15 +1,9 @@
-# Denort VSCode Ext README
-
-This is an extension for Denort.
+# Auto.dn VSCode 扩展
 
 ## Features
 
--   ✅ 初始化工作区
--   ✅ 连接设备
--   ✅ 断开设备
--   ✅ 运行工程
--   ✅ 停止工程
--   ✅ 上传工程
--   ✅ 屏幕截图
+-   ✅ 初始化 Auto.dn 工作区
+-   ✅ 连接设备并运行工程
+-   ✅ 屏幕截图并保存到本地
 
 **Enjoy!**
