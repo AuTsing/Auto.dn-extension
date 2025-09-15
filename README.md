@@ -8,5 +8,5 @@
 
 ## Install
 
-[VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=autsing.autodn-extension)
-[Open VSX Registry](https://open-vsx.org/extension/AuTsing/autodn-extension)
+-   [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=autsing.autodn-extension)
+-   [Open VSX Registry](https://open-vsx.org/extension/AuTsing/autodn-extension)
