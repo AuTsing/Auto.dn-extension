@@ -1,5 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 
+/**
+ * @version 0.15.2
+ */
 declare namespace Autodn {
     /**
      * @category Common 通用
