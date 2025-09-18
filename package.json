@@ -30,10 +30,6 @@
                 "title": "Autodn: 初始化工作区"
             },
             {
-                "command": "autodn.updateDts",
-                "title": "Autodn: 更新类型定义文件"
-            },
-            {
                 "command": "autodn.connect",
                 "title": "Autodn: 连接设备"
             },
@@ -67,7 +63,7 @@
                     "default": false
                 },
                 "autodn.updateDts": {
-                    "description": "检查更新类型定义文件",
+                    "description": "更新类型定义文件",
                     "type": "boolean",
                     "default": true
                 }

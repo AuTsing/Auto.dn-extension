@@ -22,7 +22,6 @@ export function activate(context: Vscode.ExtensionContext) {
     StatusBar.instance = new StatusBar();
 
     registry.register('initializeWorkspace', () => initializer.initializeWorkspace());
-    registry.register('updateDts', () => initializer.updateDts());
     registry.register('connect', () => wsd.handleConnect());
     registry.register('disconnect', () => wsd.handleDisconnect());
     registry.register('run', () => wsd.handleRun());

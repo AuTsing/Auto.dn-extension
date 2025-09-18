@@ -3,7 +3,17 @@ import * as FsPromises from 'fs/promises';
 import * as Path from 'path';
 import Output from './Output';
 import Asker from './Asker';
-import Commander, { Command, Commands, ProjectState, RemoveCommand, RunCommand, SnapshotCommand, StatusCommand, StopCommand, UploadCommand } from './Commander';
+import Commander, {
+    Command,
+    Commands,
+    ProjectState,
+    RemoveCommand,
+    RunCommand,
+    SnapshotCommand,
+    StatusCommand,
+    StopCommand,
+    UploadCommand,
+} from './Commander';
 import Workspace from './Workspace';
 import StatusBar from './StatusBar';
 import Storage from './Storage';
@@ -119,7 +129,7 @@ export default class Wsd {
 
         const projectNames = [] as string[];
 
-        const denoJson = await this.workspace.getDenoJson();
+        const denoJson = await this.workspace.readDenoJson();
         const imports = Object.values(denoJson.imports ?? {});
         const localImports = imports.filter(it => typeof it === 'string' && it.startsWith('.')) as string[];
         const localImportNames = localImports.map(it => Path.basename(it));

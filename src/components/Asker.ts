@@ -61,23 +61,4 @@ export default class Asker {
         }
         return dir[0].fsPath;
     }
-
-    async askForIsUpdateDts(): Promise<boolean> {
-        const selection =
-            (await Vscode.window.showInformationMessage(
-                `Autodn命名空间尚未添加至工程，无法使用补全，是否将类型定义文件添加至工程？`,
-                '是',
-                '否',
-                '不再提示',
-            )) ?? '否';
-        if (selection === '不再提示') {
-            this.storage.setUpdateDts(false);
-        }
-
-        if (selection === '是') {
-            return true;
-        } else {
-            return false;
-        }
-    }
 }
