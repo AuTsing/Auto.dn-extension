@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 /**
- * @version 0.15.3
+ * @version 0.16.0
  */
 declare namespace Autodn {
     /**
@@ -402,118 +402,349 @@ declare namespace Autodn {
     }
 
     /**
+     * Paddle 检测选项。
+     *
+     * @since v0.16.0
      * @category AI 人工智能
      */
-    export enum DnnBackend {
-        DNN_BACKEND_DEFAULT = 1,
-        DNN_BACKEND_HALIDE = 0 + 1,
-        DNN_BACKEND_INFERENCE_ENGINE = 0 + 2,
-        DNN_BACKEND_OPENCV = 0 + 3,
-        DNN_BACKEND_VKCOM = 0 + 4,
-        DNN_BACKEND_CUDA = 0 + 5,
-        DNN_BACKEND_WEBNN = 0 + 6,
-        DNN_BACKEND_TIMVX = 0 + 7,
-        DNN_BACKEND_CANN = 0 + 8,
+    export interface PaddleDetOptions {
+        /**
+         * 检测矩形区域。
+         */
+        readonly region?: Rect;
+        /**
+         * 检测置信度阈值，范围 [0.0, 1.0]，数值越高则获得的区域越少。
+         */
+        readonly threshold?: number;
+        /**
+         * 检测框置信度阈值，范围 [0.0, 1.0]，数值越高则获得的区域越少。
+         */
+        readonly boxThreshold?: number;
+        /**
+         * 检测框最小允许的边长，小于边长的检测框会被舍弃。
+         */
+        readonly minSize?: number;
+        /**
+         * 检测图像输入长度。
+         */
+        readonly inputLength?: number;
     }
 
     /**
+     * Paddle 识别选项。
+     *
+     * @since v0.16.0
      * @category AI 人工智能
      */
-    export enum DnnTarget {
-        DNN_TARGET_CPU = 0,
-        DNN_TARGET_OPENCL = 0 + 1,
-        DNN_TARGET_OPENCL_FP16 = 0 + 2,
-        DNN_TARGET_MYRIAD = 0 + 3,
-        DNN_TARGET_VULKAN = 0 + 4,
-        DNN_TARGET_FPGA = 0 + 5,
-        DNN_TARGET_CUDA = 0 + 6,
-        DNN_TARGET_CUDA_FP16 = 0 + 7,
-        DNN_TARGET_HDDL = 0 + 8,
-        DNN_TARGET_NPU = 0 + 9,
-        DNN_TARGET_CPU_FP16 = 0 + 10,
+    export interface PaddleRecOptions {
+        /**
+         * 识别矩形区域。
+         */
+        readonly region?: Rect;
+        /**
+         * 识别图像输入长度。
+         */
+        readonly inputHeight?: number;
     }
 
     /**
+     * Paddle 检测识别选项。
+     *
+     * @since v0.16.0
      * @category AI 人工智能
      */
-    export interface DetectResult {
-        readonly classId: number;
-
-        readonly confidence: number;
-
-        readonly box: number[];
+    export interface PaddleOcrOptions {
+        /**
+         * Paddle 检测选项。
+         */
+        readonly detOptions?: PaddleDetOptions;
+        /**
+         * Paddle 识别选项。
+         */
+        readonly recOptions?: PaddleRecOptions;
+        /**
+         * 检测识别置信度阈值，范围 [0.0, 1.0]，数值越高则获得的区域越少。
+         */
+        readonly threshold?: number;
     }
 
     /**
+     * Paddle 检测结果。
+     *
+     * @since v0.16.0
      * @category AI 人工智能
      */
-    export interface RecognizeResult {
-        readonly classId: number;
-
-        readonly confidence: number;
+    export interface PaddleDetResult {
+        /**
+         * 检测结果的点集合。
+         */
+        readonly box: Point[];
+        /**
+         * 检测结果的矩形。
+         */
+        readonly rect: Rect;
+        /**
+         * 检测结果的置信度。
+         */
+        readonly score: number;
     }
 
     /**
+     * Paddle 识别结果。
+     *
+     * @since v0.16.0
      * @category AI 人工智能
      */
-    export class Model {
+    export interface PaddleRecResult {
+        /**
+         * 检测结果的文本。
+         */
+        readonly text: string;
+        /**
+         * 检测结果的置信度。
+         */
+        readonly score: number;
+    }
+
+    /**
+     * Paddle 检测识别结果。
+     *
+     * @since v0.16.0
+     * @category AI 人工智能
+     */
+    export interface PaddleOcrResult {
+        /**
+         * 检测结果的点集合。
+         */
+        readonly box: Point[];
+        /**
+         * 检测结果的矩形。
+         */
+        readonly rect: Rect;
+        /**
+         * 检测结果的文本。
+         */
+        readonly text: string;
+        /**
+         * 检测结果的置信度。
+         */
+        readonly score: number;
+    }
+
+    /**
+     * Paddle 模型对象。
+     *
+     * @since v0.16.0
+     * @category AI 人工智能
+     */
+    export class PaddleModel {
         private constructor();
 
+        /**
+         * 回收对象，释放资源，回收对象后再使用对象进行识别将会导致报错。
+         *
+         * @since v0.16.0
+         */
         recycle(): void;
 
-        setBackend(backendId: DnnBackend): void;
+        /**
+         * 设置识别区域，设置的识别区域必须在图片范围内。
+         *
+         * @param ltrb - 矩形 LTRB 数组
+         * @returns Paddle 模型自身
+         *
+         * @example
+         * ```ts
+         * // 设置识别区域为 (100, 100) (200, 200) 的区域
+         * paddle.setRegion([100, 100, 200, 200])
+         * ```
+         *
+         * @since v0.16.0
+         */
+        setRegion(ltrb: RectData): PaddleModel;
+        /**
+         * @param options - 矩形构造选项
+         * @returns Paddle 模型自身
+         *
+         * @example
+         * ```ts
+         * // 设置识别区域为 (100, 100) (200, 200) 的区域
+         * paddle.setRegion({ left: 100, top: 100, right: 200, bottom: 200 })
+         * ```
+         *
+         * @since v0.16.0
+         */
+        setRegion(options: RectConstructorOptions): PaddleModel;
+        /**
+         * @param left - 矩形 L 坐标
+         * @param top - 矩形 T 坐标
+         * @param right - 矩形 R 坐标
+         * @param bottom - 矩形 B 坐标
+         * @returns Paddle 模型自身
+         *
+         * @example
+         * ```ts
+         * // 设置识别区域为 (100, 100) (200, 200) 的区域
+         * paddle.setRegion(100, 100, 200, 200)
+         * ```
+         *
+         * @since v0.16.0
+         */
+        setRegion(left: number | null, top: number | null, right: number | null, bottom: number | null): PaddleModel;
 
-        setTarget(targetId: DnnTarget): void;
+        /**
+         * 设置检测选项。
+         *
+         * @param detOptions - Paddle 检测选项
+         * @returns Paddle 模型自身
+         *
+         * @example
+         * ```ts
+         * const paddle = paddle.setDetOptions({ threshold: 0.3, boxThreshold: 0.6 })
+         * ```
+         *
+         * @since v0.16.0
+         */
+        setDetOptions(detOptions: PaddleDetOptions): PaddleModel;
 
-        setConfidenceThreshold(threshold: number): void;
+        /**
+         * 设置识别选项。
+         *
+         * @param recOptions - Paddle 识别选项
+         * @returns Paddle 模型自身
+         *
+         * @example
+         * ```ts
+         * const paddle = paddle.setRecOptions({ region: new Rect(100, 100, 200, 200) })
+         * ```
+         *
+         * @since v0.16.0
+         */
+        setRecOptions(recOptions: PaddleRecOptions): PaddleModel;
 
-        setNmsThreshold(threshold: number): void;
+        /**
+         * 设置识别检测选项。
+         *
+         * @param ocrOptions - Paddle 识别检测选项
+         * @returns Paddle 模型自身
+         *
+         * @example
+         * ```ts
+         * const paddle = paddle.setOcrOptions({ threshold: 0.8 })
+         * ```
+         *
+         * @since v0.16.0
+         */
+        setOcrOptions(ocrOptions: PaddleOcrOptions): PaddleModel;
 
-        setRegion(ltrb: RectData): void;
-        setRegion(options: RectConstructorOptions): void;
-        setRegion(left: number | null, top: number | null, right: number | null, bottom: number | null): void;
+        /**
+         * 使用媒体投影权限检测当前屏幕。
+         *
+         * @returns Paddle 检测结果集合
+         *
+         * @example
+         * ```ts
+         * const results = await paddle.det()
+         * ```
+         *
+         * @since v0.16.0
+         */
+        det(): Promise<PaddleDetResult[]>;
+        /**
+         * 检测指定图片。
+         *
+         * @param path - 检测图片的路径
+         * @returns Paddle 检测结果集合
+         *
+         * @example
+         * ```ts
+         * const imgPath = Android.getExternalStoragePath() + "/Resources/det.png"
+         * const results = await paddle.det(imgPath)
+         * ```
+         *
+         * @since v0.16.0
+         */
+        det(path: string): Promise<PaddleDetResult[]>;
 
-        detect(): Promise<DetectResult[]>;
-        detect(path: string): Promise<DetectResult[]>;
+        /**
+         * 使用媒体投影权限识别当前屏幕。
+         *
+         * @returns Paddle 识别结果
+         *
+         * @example
+         * ```ts
+         * const result = await paddle.rec()
+         * ```
+         *
+         * @since v0.16.0
+         */
+        rec(): Promise<PaddleRecResult>;
+        /**
+         * 识别指定图片。
+         *
+         * @param path - 识别图片的路径
+         * @returns Paddle 识别结果
+         *
+         * @example
+         * ```ts
+         * const imgPath = Android.getExternalStoragePath() + "/Resources/rec.png"
+         * const result = await paddle.rec(imgPath)
+         * ```
+         *
+         * @since v0.16.0
+         */
+        rec(path: string): Promise<PaddleDetResult>;
 
-        recognize(): Promise<RecognizeResult[]>;
-        recognize(path: string): Promise<RecognizeResult[]>;
+        /**
+         * 使用媒体投影权限检测识别当前屏幕。
+         *
+         * @returns PaddleModel 检测识别结果
+         *
+         * @example
+         * ```ts
+         * const results = await paddle.ocr()
+         * ```
+         *
+         * @since v0.16.0
+         */
+        ocr(): Promise<PaddleOcrResult[]>;
+        /**
+         * 检测识别指定图片。
+         *
+         * @param path - 检测识别图片的路径
+         * @returns Paddle 检测识别结果
+         *
+         * @example
+         * ```ts
+         * const imgPath = Android.getExternalStoragePath() + "/Resources/ocr.png"
+         * const results = await paddle.ocr(imgPath)
+         * ```
+         *
+         * @since v0.16.0
+         */
+        ocr(path: string): Promise<PaddleOcrResult[]>;
     }
 
     /**
+     * 加载 Paddle 模型，可用于检测、识别文字。
+     *
+     * @param detModelPath - 检测模型完整路径
+     * @param recModelPath - 识别模型完整路径
+     * @param dictPath - 识别字典完整路径
+     * @returns Paddle 模型对象
+     *
+     * @example
+     * ```ts
+     * const detModelPath = Android.getExternalStoragePath() + "/Resources/detModel.onnx"
+     * const recModelPath = Android.getExternalStoragePath() + "/Resources/recModel.onnx"
+     * const dictPath = Android.getExternalStoragePath() + "/Resources/dict.txt"
+     * const paddle = await Autodn.loadPaddleModel(detModelPath, recModelPath, dictPath)
+     * ```
+     *
+     * @since v0.16.0
      * @category AI 人工智能
      */
-    export function loadModel(path: string): Promise<Model>;
-
-    /**
-     * @category AI 人工智能
-     */
-    export function loadOnnxModel(path: string): Promise<Model>;
-
-    /**
-     * @category AI 人工智能
-     */
-    export function loadCaffeModel(prototxtPath: string, modelPath: string): Promise<Model>;
-
-    /**
-     * @category AI 人工智能
-     */
-    export function loadDarknetModel(cfgPath: string, modelPath: string): Promise<Model>;
-
-    /**
-     * @category AI 人工智能
-     */
-    export function loadTfliteModel(path: string): Promise<Model>;
-
-    /**
-     * @category AI 人工智能
-     */
-    export function loadTensorfloModel(modelPath: string, configPath: string): Promise<Model>;
-
-    /**
-     * @category AI 人工智能
-     */
-    export function loadTorchModel(path: string): Promise<Model>;
+    export function loadPaddleModel(detModelPath: string, recModelPath: string, dictPath: string): Promise<PaddleModel>;
 
     /**
      * @category App 应用
