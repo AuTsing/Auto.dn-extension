@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 /**
- * @version 0.16.0
+ * @version 0.17.0
  */
 declare namespace Autodn {
     /**
@@ -2012,44 +2012,104 @@ declare namespace Autodn {
     export function destroyProject(projectName: string): Promise<void>;
 
     /**
+     * @since v0.17.0
      * @category Project 工程
      */
-    export type ProjectCategory = 'Normal' | 'ConfigFile' | 'Others';
+    export type ProjectCategory = 'Normal' | 'BundleFile' | 'ConfigFile' | 'Others';
 
     /**
+     * @since v0.17.0
      * @category Project 工程
      */
     export interface ProjectInfo {
-        readonly name: string;
+        /**
+         * 工程详细信息。
+         */
+        readonly project: {
+            /**
+             * 工程名称。
+             */
+            readonly name: string;
 
-        readonly path: string;
+            /**
+             * 工程路径。
+             */
+            readonly path: string;
 
-        readonly category: ProjectCategory;
+            /**
+             * 工程类型。
+             */
+            readonly category: ProjectCategory;
 
-        readonly entryPoint: string;
+            /**
+             * 工程入口点。
+             */
+            readonly entryPoint: string;
 
-        readonly workingDir: string;
+            /**
+             * 工程工作目录。
+             */
+            readonly workingDir: string;
 
-        readonly configFilePath: string;
+            /**
+             * 工程配置文件。
+             */
+            readonly config: string;
 
-        readonly shortcut: boolean;
+            /**
+             * 工程远程仓库。
+             */
+            readonly repository: string;
 
-        readonly permissions: string[];
+            /**
+             * 工程是否添加到快捷方式。
+             */
+            readonly shortcut: boolean;
 
-        readonly args: string[];
+            /**
+             * 工程权限。
+             */
+            readonly permissions: string[];
 
-        readonly repository: string;
+            /**
+             * 工程参数。
+             */
+            readonly arguments: string[];
 
-        readonly updatedAt: number;
+            /**
+             * 工程任务。
+             */
+            readonly tasks: string[];
 
-        readonly cachedAt: number;
+            /**
+             * 工程更新时间戳。
+             */
+            readonly updatedAt: number;
 
-        readonly tasks: string[];
+            /**
+             * 工程缓存时间戳。
+             */
+            readonly cachedAt: number;
 
+            /**
+             * 工程加载时间戳。
+             */
+            readonly loadedAt: number;
+        };
+
+        /**
+         * 工程是否正在运行。
+         */
         readonly running: boolean;
 
+        /**
+         * 工程 ID。
+         */
         readonly id: number;
 
+        /**
+         * 工程计划运行时间戳。
+         */
         readonly planAt: number;
     }
 
@@ -2070,83 +2130,176 @@ declare namespace Autodn {
     export function gitPull(repository: string): Promise<void>;
 
     /**
+     * Shell 执行结果。
+     *
+     * @since v0.17.0
      * @category Shell
      */
-    export interface ShellResultConstructorOptions {
-        readonly code?: number;
-
-        readonly out?: string[];
-
-        readonly err?: string[];
-
-        readonly isSuccess?: boolean;
-    }
-
-    /**
-     * @category Shell
-     */
-    export class ShellResult {
-        static readonly defaultOptions: {
-            readonly code: number;
-
-            readonly out: string[];
-
-            readonly err: string[];
-
-            readonly isSuccess: boolean;
-        };
-
+    export interface ShellExecResult {
+        /**
+         * 执行结果的退出代码。
+         */
         readonly code: number;
 
+        /**
+         * 执行结果的输出流集合。
+         */
         readonly out: string[];
 
+        /**
+         * 执行结果的错误输出流集合。
+         */
         readonly err: string[];
 
+        /**
+         * 执行是否成功。
+         */
         readonly isSuccess: boolean;
-
-        constructor();
-        constructor(options: ShellResultConstructorOptions);
     }
 
     /**
+     * 以普通用户的权限执行命令。
+     *
+     * @param cmd - 执行命令
+     * @returns Shell 执行结果
+     *
+     * @example
+     * ```ts
+     * // 执行命令查看当前用户
+     * const result = await Autodn.execSh("whoami");
+     * Autodn.log.d(result);
+     * ```
+     *
+     * @since v0.17.0
      * @category Shell
      */
-    export function execSh(cmd: string): Promise<ShellResult>;
+    export function execSh(cmd: string): Promise<ShellExecResult>;
 
     /**
+     * 以同步的方式执行`execSh`。
+     *
+     * @param cmd - 执行命令
+     * @returns Shell 执行结果
+     *
+     * @example
+     * ```ts
+     * // 执行命令查看当前用户
+     * const result = Autodn.execShSync("whoami");
+     * Autodn.log.d(result);
+     * ```
+     *
+     * @since v0.17.0
      * @category Shell
      */
-    export function execShSync(cmd: string): ShellResult;
+    export function execShSync(cmd: string): ShellExecResult;
 
     /**
+     * 以 ROOT 用户的权限执行命令。
+     *
+     * @param cmd - 执行命令
+     * @returns Shell 执行结果
+     *
+     * @example
+     * ```ts
+     * // 执行命令查看当前用户
+     * const result = await Autodn.execSu("whoami");
+     * Autodn.log.d(result);
+     * ```
+     *
+     * @since v0.17.0
      * @category Shell
      */
-    export function execSu(cmd: string): Promise<ShellResult>;
+    export function execSu(cmd: string): Promise<ShellExecResult>;
 
     /**
+     * 以同步的方式执行`execSu`。
+     *
+     * @param cmd - 执行命令
+     * @returns Shell 执行结果
+     *
+     * @example
+     * ```ts
+     * // 执行命令查看当前用户
+     * const result = Autodn.execSuSync("whoami");
+     * Autodn.log.d(result);
+     * ```
+     *
+     * @since v0.17.0
      * @category Shell
      */
-    export function execSuSync(cmd: string): ShellResult;
+    export function execSuSync(cmd: string): ShellExecResult;
 
     /**
+     * 以 ROOT 用户(Libsu库)的权限执行命令。
+     *
+     * @param cmd - 执行命令
+     * @returns Shell 执行结果
+     *
+     * @example
+     * ```ts
+     * // 执行命令查看当前用户
+     * const result = await Autodn.execLibsu("whoami");
+     * Autodn.log.d(result);
+     * ```
+     *
+     * @since v0.17.0
      * @category Shell
      */
-    export function execLibsu(cmd: string): Promise<ShellResult>;
+    export function execLibsu(cmd: string): Promise<ShellExecResult>;
 
     /**
+     * 以同步的方式执行`execLibsu`。
+     *
+     * @param cmd - 执行命令
+     * @returns Shell 执行结果
+     *
+     * @example
+     * ```ts
+     * // 执行命令查看当前用户
+     * const result = Autodn.execLibsuSync("whoami");
+     * Autodn.log.d(result);
+     * ```
+     *
+     * @since v0.17.0
      * @category Shell
      */
-    export function execLibsuSync(cmd: string): ShellResult;
+    export function execLibsuSync(cmd: string): ShellExecResult;
 
     /**
+     * 以 Shizuku 用户的权限执行命令。
+     *
+     * @param cmd - 执行命令
+     * @returns Shell 执行结果
+     *
+     * @example
+     * ```ts
+     * // 执行命令查看当前用户
+     * const result = await Autodn.execShizuku("whoami");
+     * Autodn.log.d(result);
+     * ```
+     *
+     * @since v0.17.0
      * @category Shell
      */
-    export function execShizuku(cmd: string): Promise<ShellResult>;
+    export function execShizuku(cmd: string): Promise<ShellExecResult>;
 
     /**
+     * 以同步的方式执行`execShizuku`。
+     *
+     * @param cmd - 执行命令
+     * @returns Shell 执行结果
+     *
+     * @example
+     * ```ts
+     * // 执行命令查看当前用户
+     * const result = Autodn.execShizukuSync("whoami");
+     * Autodn.log.d(result);
+     * ```
+     *
+     * @since v0.17.0
      * @category Shell
      */
-    export function execShizukuSync(cmd: string): ShellResult;
+    export function execShizukuSync(cmd: string): ShellExecResult;
 
     /**
      * @category System 系统
