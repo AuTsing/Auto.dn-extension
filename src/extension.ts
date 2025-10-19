@@ -16,12 +16,12 @@ export function activate(context: Vscode.ExtensionContext) {
     const asker = new Asker(storage);
     const commander = new Commander();
     const wsd = new Wsd(asker, commander, workspace, storage);
-    const initializer = new Initializer(context, workspace, asker, storage);
+    const initializer = new Initializer(context, workspace, storage);
 
     Output.instance = new Output();
     StatusBar.instance = new StatusBar();
 
-    registry.register('initializeWorkspace', () => initializer.initializeWorkspace());
+    registry.register('initializeWorkspace', () => initializer.handleInitWorkspace());
     registry.register('connect', () => wsd.handleConnect());
     registry.register('disconnect', () => wsd.handleDisconnect());
     registry.register('run', () => wsd.handleRun());
@@ -29,7 +29,9 @@ export function activate(context: Vscode.ExtensionContext) {
     registry.register('upload', () => wsd.handleUpload());
     registry.register('snapshot', () => wsd.handleSnapshot());
     registry.register('clickStatusBarItem', () => StatusBar.instance?.handleClickStatusBarItem());
-    registry.listenOnDidChangeConfiguration(() => initializer.handleDidChangeConfiguration());
+    registry.listenOnDidChangeConfiguration('autodn.enable', () => initializer.handleDidChangeEnable());
+
+    initializer.handleDidChangeEnable();
 }
 
 export function deactivate() {}

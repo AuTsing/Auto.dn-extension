@@ -4,22 +4,15 @@ import * as Path from 'node:path';
 import * as Url from 'node:url';
 import Output from './Output';
 import Workspace from './Workspace';
-import Asker from './Asker';
 import Storage from './Storage';
 import StatusBar from './StatusBar';
 
 export default class Initializer {
-    private readonly context: Vscode.ExtensionContext;
-    private readonly workspace: Workspace;
-    private readonly asker: Asker;
-    private readonly storage: Storage;
-
-    constructor(context: Vscode.ExtensionContext, workspace: Workspace, asker: Asker, storage: Storage) {
-        this.context = context;
-        this.workspace = workspace;
-        this.asker = asker;
-        this.storage = storage;
-    }
+    constructor(
+        private readonly context: Vscode.ExtensionContext,
+        private readonly workspace: Workspace,
+        private readonly storage: Storage,
+    ) {}
 
     private getDtsUrl(): string {
         const root = this.context.extensionPath;
@@ -28,98 +21,102 @@ export default class Initializer {
         return url.href;
     }
 
-    private async initializeDenoJson(): Promise<void> {
-        const denoJson = await this.workspace.readDenoJson();
+    private async updateDts(): Promise<void> {
+        const denoConfig = await this.workspace.readDenoConfig();
         const dtsUrl = this.getDtsUrl();
-        const types = denoJson?.compilerOptions?.types ?? [];
-
+        const types = denoConfig?.compilerOptions?.types ?? [];
         if (types.includes(dtsUrl)) {
             return;
         }
 
         const filteredTypes = types.filter(it => !it.endsWith('lib.autodn.d.ts'));
         filteredTypes.push(dtsUrl);
+        denoConfig.compilerOptions = denoConfig.compilerOptions ?? {};
+        denoConfig.compilerOptions.types = filteredTypes;
 
-        denoJson.compilerOptions = denoJson.compilerOptions ?? {};
-        denoJson.compilerOptions.types = filteredTypes;
-
-        await this.workspace.writeDenoJson(denoJson);
+        await this.workspace.writeDenoConfig(denoConfig);
     }
 
-    private async initializeMainJs(): Promise<void> {
-        const maybeMainJsPaths = this.workspace.getMaybeMainJsPaths();
+    private async initEntryPoint(): Promise<void> {
+        const maybeEntryPointPaths = this.workspace.getMaybeEntryPointPaths();
 
-        for (const maybeMainJsPath of maybeMainJsPaths) {
-            const maybeMainJsPathExist = await Fs.access(maybeMainJsPath)
+        for (const maybeEntryPointPath of maybeEntryPointPaths) {
+            const maybeEntryPointPathExist = await Fs.access(maybeEntryPointPath)
                 .then(() => true)
                 .catch(() => false);
-            if (maybeMainJsPathExist) {
+            if (maybeEntryPointPathExist === true) {
                 return;
             }
         }
 
         const extensionFolder = this.context.extensionPath;
-        const mainJsTemplatePath = Path.join(extensionFolder, 'assets', 'templates', 'main.ts');
-        const mainJsTemplateContent = new Uint8Array(await Fs.readFile(mainJsTemplatePath));
+        const entryPointTemplatePath = Path.join(extensionFolder, 'assets', 'templates', 'main.ts');
+        const entryPointTemplateContent = new Uint8Array(await Fs.readFile(entryPointTemplatePath));
 
-        await this.workspace.writeMainJs(mainJsTemplateContent);
+        await this.workspace.writeEntryPoint(entryPointTemplateContent);
     }
 
-    private async initializeConfiguration(): Promise<void> {
+    private async initDenoConfig(): Promise<void> {
+        await this.updateDts();
+    }
+
+    private async initConfiguration(): Promise<void> {
         const denoConfig = this.workspace.getDenoConfiguration();
         if (denoConfig.get('enable') !== true) {
             await denoConfig.update('enable', true);
             await new Promise(resolve => setTimeout(() => resolve(null), 1000));
         }
 
-        const config = this.workspace.getConfiguration();
-        if (config.get('enable') !== true) {
-            await config.update('enable', true);
+        const enable = this.storage.getEnable();
+        if (enable !== true) {
+            await this.storage.setEnable(true);
             await new Promise(resolve => setTimeout(() => resolve(null), 1000));
         }
     }
 
-    async initializeWorkspace() {
+    async handleInitWorkspace() {
         try {
-            await this.initializeMainJs();
-            await this.initializeDenoJson();
-            await this.initializeConfiguration();
+            await this.initEntryPoint();
+            await this.initDenoConfig();
+            await this.initConfiguration();
             Output.printlnAndShow('工作区初始化成功');
         } catch (err) {
             Output.eprintln('工作区初始化失败:', err);
         }
     }
 
-    async updateDts() {
+    async handleUpdateDts() {
         try {
+            if (this.storage.getEnable() !== true) {
+                return;
+            }
+
             const update = this.storage.getUpdateDts();
-            if (!update) {
+            if (update === false) {
                 return;
             }
 
-            const denoJson = await this.workspace.readDenoJson();
-            const dtsUrl = this.getDtsUrl();
-            const types = denoJson?.compilerOptions?.types ?? [];
-            if (types.includes(dtsUrl)) {
-                return;
-            }
+            await this.updateDts();
 
-            await this.initializeDenoJson();
             await new Promise(resolve => setTimeout(() => resolve(null), 1000));
             await Vscode.commands.executeCommand('deno.client.restart');
+
             Output.printlnAndShow('类型定义文件已更新');
         } catch (err) {
             Output.eprintln('类型定义文件更新失败:', err);
         }
     }
 
-    async handleDidChangeConfiguration() {
-        const config = this.workspace.getConfiguration();
-        if (config.get('enable') === true) {
+    async handleToggleStatusBar() {
+        if (this.storage.getEnable() === true) {
             StatusBar.instance?.handleShowStatusBar();
-            await this.updateDts();
         } else {
             StatusBar.instance?.handleHideStatusBar();
         }
+    }
+
+    async handleDidChangeEnable() {
+        await this.handleToggleStatusBar();
+        await this.handleUpdateDts();
     }
 }

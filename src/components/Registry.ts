@@ -2,17 +2,19 @@ import * as Vscode from 'vscode';
 import { NS } from '../values/Constants';
 
 export default class Registry {
-    private readonly context: Vscode.ExtensionContext;
-
-    constructor(context: Vscode.ExtensionContext) {
-        this.context = context;
-    }
+    constructor(private readonly context: Vscode.ExtensionContext) {}
 
     register(command: string, callback: () => any) {
         this.context.subscriptions.push(Vscode.commands.registerCommand(`${NS}.${command}`, callback));
     }
 
-    listenOnDidChangeConfiguration(listener: (e: Vscode.ConfigurationChangeEvent) => any) {
-        this.context.subscriptions.push(Vscode.workspace.onDidChangeConfiguration(listener));
+    listenOnDidChangeConfiguration(section: string, callback: () => any) {
+        this.context.subscriptions.push(
+            Vscode.workspace.onDidChangeConfiguration(it => {
+                if (it.affectsConfiguration(section) === true) {
+                    callback();
+                }
+            }),
+        );
     }
 }

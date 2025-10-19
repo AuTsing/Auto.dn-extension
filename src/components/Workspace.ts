@@ -10,7 +10,7 @@ export interface WorkspaceFile {
     remotePath: string;
 }
 
-export interface DenoJson {
+export interface DenoConfig {
     imports?: {};
     compilerOptions?: {
         types?: string[];
@@ -64,8 +64,8 @@ export default class Workspace {
         const workspaceFiles = [] as WorkspaceFile[];
         const workspaceFolder = this.getWorkspaceFolder();
 
-        const denoJson = await this.readDenoJson();
-        const imports = Object.values(denoJson.imports ?? {});
+        const denoConfig = await this.readDenoConfig();
+        const imports = Object.values(denoConfig.imports ?? {});
         const localImports = imports.filter(it => typeof it === 'string' && it.startsWith('.')) as string[];
         const localImportsAbsolutePaths = localImports.map(it => Path.resolve(workspaceFolder.uri.fsPath, it));
         for (const path of localImportsAbsolutePaths) {
@@ -92,47 +92,47 @@ export default class Workspace {
         return Vscode.workspace.getConfiguration(NS);
     }
 
-    private getDenoJsonPath(): string {
+    private getDenoConfigPath(): string {
         const workspaceFolder = this.getWorkspaceFolder();
-        const denoJsonPath = Path.join(workspaceFolder.uri.fsPath, 'deno.json');
-        return denoJsonPath;
+        const denoConfigPath = Path.join(workspaceFolder.uri.fsPath, 'deno.json');
+        return denoConfigPath;
     }
 
-    async readDenoJson(): Promise<DenoJson> {
-        const denoJsonPath = this.getDenoJsonPath();
-        const denoJsonPathExist = await Fs.access(denoJsonPath)
+    async readDenoConfig(): Promise<DenoConfig> {
+        const denoConfigPath = this.getDenoConfigPath();
+        const denoConfigPathExist = await Fs.access(denoConfigPath)
             .then(() => true)
             .catch(() => false);
-        if (!denoJsonPathExist) {
+        if (denoConfigPathExist === false) {
             return {};
         }
-        const denoJsonContent = await Fs.readFile(denoJsonPath, { encoding: 'utf-8' });
-        const denoJson = JSON.parse(denoJsonContent) satisfies DenoJson;
-        return denoJson;
+        const denoConfigJson = await Fs.readFile(denoConfigPath, { encoding: 'utf-8' });
+        const denoConfig = JSON.parse(denoConfigJson) satisfies DenoConfig;
+        return denoConfig;
     }
 
-    async writeDenoJson(denoJson: DenoJson): Promise<void> {
-        const denoJsonPath = this.getDenoJsonPath();
-        await Jsonfile.writeFile(denoJsonPath, denoJson, { spaces: 4 });
+    async writeDenoConfig(denoConfig: DenoConfig): Promise<void> {
+        const denoConfigPath = this.getDenoConfigPath();
+        await Jsonfile.writeFile(denoConfigPath, denoConfig, { spaces: 4 });
     }
 
-    getMaybeMainJsPaths(): string[] {
+    getMaybeEntryPointPaths(): string[] {
         const workspaceFolder = this.getWorkspaceFolder();
-        const maybeMainJsPaths = [
+        const maybeEntryPointPaths = [
             Path.join(workspaceFolder.uri.fsPath, 'main.ts'),
             Path.join(workspaceFolder.uri.fsPath, 'main.js'),
         ];
-        return maybeMainJsPaths;
+        return maybeEntryPointPaths;
     }
 
-    private getMainJsPath(): string {
+    private getEntryPointPath(): string {
         const workspaceFolder = this.getWorkspaceFolder();
         const mainJsPath = Path.join(workspaceFolder.uri.fsPath, 'main.ts');
         return mainJsPath;
     }
 
-    async writeMainJs(content: Uint8Array): Promise<void> {
-        const mainJsPath = this.getMainJsPath();
+    async writeEntryPoint(content: Uint8Array): Promise<void> {
+        const mainJsPath = this.getEntryPointPath();
         await Fs.writeFile(mainJsPath, content);
     }
 }

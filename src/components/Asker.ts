@@ -41,7 +41,7 @@ export default class Asker {
             return this.askForWsUrl();
         }
         if (selection === '清空历史设备') {
-            this.storage.setWsUrls();
+            await this.storage.setWsUrls();
             return this.askForWsUrl();
         }
         this.validateWsUrl(selection);

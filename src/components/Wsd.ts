@@ -129,8 +129,8 @@ export default class Wsd {
 
         const projectNames = [] as string[];
 
-        const denoJson = await this.workspace.readDenoJson();
-        const imports = Object.values(denoJson.imports ?? {});
+        const denoConfig = await this.workspace.readDenoConfig();
+        const imports = Object.values(denoConfig.imports ?? {});
         const localImports = imports.filter(it => typeof it === 'string' && it.startsWith('.')) as string[];
         const localImportNames = localImports.map(it => Path.basename(it));
         projectNames.push(...localImportNames);

@@ -1,7 +1,8 @@
 import * as Vscode from 'vscode';
 import Workspace from './Workspace';
 
-export enum Configurations {
+export enum Configuration {
+    Enable = 'enable',
     UpdateDts = 'updateDts',
 }
 
@@ -18,25 +19,33 @@ export default class Storage {
         return this.state.get('wsUrls', []);
     }
 
-    setWsUrls(wsUrls: string[] = []) {
-        this.state.update('wsUrls', wsUrls);
+    async setWsUrls(wsUrls: string[] = []) {
+        await this.state.update('wsUrls', wsUrls);
     }
 
-    addWsUrl(wsUrl: string) {
+    async addWsUrl(wsUrl: string) {
         const wsUrls = this.getWsUrls();
         const index = wsUrls.indexOf(wsUrl);
         if (index > -1) {
             wsUrls.splice(index, 1);
         }
         wsUrls.push(wsUrl);
-        this.setWsUrls(wsUrls);
+        await this.setWsUrls(wsUrls);
+    }
+
+    getEnable(): boolean {
+        return this.configuration.get<boolean>(Configuration.Enable, false);
+    }
+
+    async setEnable(value: boolean) {
+        await this.configuration.update(Configuration.Enable, value);
     }
 
     getUpdateDts(): boolean {
-        return this.configuration.get<boolean>(Configurations.UpdateDts) ?? true;
+        return this.configuration.get<boolean>(Configuration.UpdateDts, true);
     }
 
-    setUpdateDts(value: boolean) {
-        this.configuration.update(Configurations.UpdateDts, value);
+    async setUpdateDts(value: boolean) {
+        await this.configuration.update(Configuration.UpdateDts, value);
     }
 }
