@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 /**
- * @version 0.18.1
+ * @version 0.18.2
  */
 declare namespace Autodn {
     /**
