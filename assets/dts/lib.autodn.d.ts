@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 /**
- * @version 0.18.2
+ * @version 0.19.0
  */
 declare namespace Autodn {
     /**
@@ -3152,49 +3152,896 @@ declare namespace Autodn {
     export function multiUpShizuku(id: number): Promise<void>;
 
     /**
+     * 画板绘画方式。
+     * `Fill` 填充样式，将形状的内部完全填充颜色；
+     * `Stroke` 描边样式，只绘制边框，不填充内部。
+     *
+     * @since v0.19.0
      * @category Floater 悬浮窗
      */
-    export class Floater {
-        static builder(): FloaterBuilder;
+    export type CanvasDrawStyle = 'Fill' | 'Stroke';
 
-        static builder(id: string): FloaterBuilder;
+    /**
+     * 画板线条的末端形状。
+     * `Butt` 线条在终点处直接截断，不超出路径端点；
+     * `Round` 在线段端点添加一个半圆形的端盖，半径等于线宽的一半；
+     * `Square` 在线段端点延伸出半个线宽的方形端盖。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export type CanvasStrokeCap = 'Butt' | 'Round' | 'Square';
 
+    /**
+     * 画板多个点在绘制时的连接方式。
+     * `Points` 只绘制单个点，每个点独立；
+     * `Round` 每两个点连成一条线。点数必须是偶数（奇数时最后一个点会被忽略）；
+     * `Square` 将所有点依次相连，形成折线（不会自动闭合）。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export type CanvasPointMode = 'Points' | 'Lines' | 'Polygon';
+
+    /**
+     * 画板控制文字超出显示区域时的处理方式。
+     * `Clip` 超出部分直接裁掉，不显示省略号；
+     * `Ellipsis` 超出部分显示省略号在末尾；
+     * `MiddleEllipsis` 超出部分显示省略号在中间；
+     * `Visible` 超出部分继续显示，可能溢出容器；
+     * `StartEllipsis` 超出部分显示省略号在开头。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export type CanvasTextOverflow = 'Clip' | 'Ellipsis' | 'MiddleEllipsis' | 'Visible' | 'StartEllipsis';
+
+    /**
+     * 画板构造选项。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export interface CanvasConstructorOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 画板左上角的 X 坐标。
+         *
+         * @since v0.19.0
+         */
+        readonly x?: number;
+
+        /**
+         * 画板左上角的 Y 坐标。
+         *
+         * @since v0.19.0
+         */
+        readonly y?: number;
+
+        /**
+         * 画板宽度。
+         *
+         * @since v0.19.0
+         */
+        readonly width?: number;
+
+        /**
+         * 画板高度。
+         *
+         * @since v0.19.0
+         */
+        readonly height?: number;
+
+        /**
+         * 画板背景颜色，默认为`null`，透明。
+         *
+         * @since v0.19.0
+         */
+        readonly backgroundColor?: number;
+    }
+
+    /**
+     * 画板绘画线条选项。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export interface CanvasDrawLineOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 开始点。
+         *
+         * @since v0.19.0
+         */
+        readonly fromPoint?: IntoPoint;
+
+        /**
+         * 结束点。
+         *
+         * @since v0.19.0
+         */
+        readonly toPoint?: IntoPoint;
+
+        /**
+         * 线条颜色。
+         *
+         * @since v0.19.0
+         */
+        readonly color?: number;
+
+        /**
+         * 线条宽度。
+         *
+         * @since v0.19.0
+         */
+        readonly strokeWidth?: number;
+
+        /**
+         * 线条末端形状，默认为 `CanvasStrokeCap.Butt`。
+         *
+         * @since v0.19.0
+         */
+        readonly strokeCap?: CanvasStrokeCap;
+    }
+
+    /**
+     * 画板绘画矩形选项。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export interface CanvasDrawRectOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 绘画矩形。
+         *
+         * @since v0.19.0
+         */
+        readonly rect?: IntoRect;
+
+        /**
+         * 矩形颜色。
+         *
+         * @since v0.19.0
+         */
+        readonly color?: number;
+
+        /**
+         * 绘图方式，默认为 `CanvasDrawStyle.Fill`。
+         *
+         * @since v0.19.0
+         */
+        readonly drawStyle?: CanvasDrawStyle;
+
+        /**
+         * 轮廓宽度。
+         *
+         * @since v0.19.0
+         */
+        readonly strokeWidth?: number;
+    }
+
+    /**
+     * 画板绘画图像选项。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export interface CanvasDrawImageOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 图像路径。
+         *
+         * @since v0.19.0
+         */
+        readonly path?: string;
+
+        /**
+         * 绘图矩形区域。
+         *
+         * @since v0.19.0
+         */
+        readonly rect?: IntoRect;
+    }
+
+    /**
+     * 画板绘画圆角矩形选项。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export interface CanvasDrawRoundRectOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 绘图矩形。
+         *
+         * @since v0.19.0
+         */
+        readonly rect?: IntoRect;
+
+        /**
+         * 圆角矩形颜色。
+         *
+         * @since v0.19.0
+         */
+        readonly color?: number;
+
+        /**
+         * 绘图方式，默认为 `CanvasDrawStyle.Fill`。
+         *
+         * @since v0.19.0
+         */
+        readonly drawStyle?: CanvasDrawStyle;
+
+        /**
+         * 轮廓宽度。
+         *
+         * @since v0.19.0
+         */
+        readonly strokeWidth?: number;
+
+        /**
+         * 圆角半径。
+         *
+         * @since v0.19.0
+         */
+        readonly cornerRadius?: number;
+    }
+
+    /**
+     * 画板绘画圆选项。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export interface CanvasDrawCircleOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 圆心点。
+         *
+         * @since v0.19.0
+         */
+        readonly center?: IntoPoint;
+
+        /**
+         * 半径。
+         *
+         * @since v0.19.0
+         */
+        readonly radius?: number;
+
+        /**
+         * 圆颜色。
+         *
+         * @since v0.19.0
+         */
+        readonly color?: number;
+
+        /**
+         * 绘图方式，默认为 `CanvasDrawStyle.Fill`。
+         *
+         * @since v0.19.0
+         */
+        readonly drawStyle?: CanvasDrawStyle;
+
+        /**
+         * 轮廓宽度。
+         *
+         * @since v0.19.0
+         */
+        readonly strokeWidth?: number;
+    }
+
+    /**
+     * 画板绘画椭圆选项。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export interface CanvasDrawOvalOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 绘图矩形区域。
+         *
+         * @since v0.19.0
+         */
+        readonly rect?: IntoRect;
+
+        /**
+         * 椭圆颜色。
+         *
+         * @since v0.19.0
+         */
+        readonly color?: number;
+
+        /**
+         * 绘图方式，默认为 `CanvasDrawStyle.Fill`。
+         *
+         * @since v0.19.0
+         */
+        readonly drawStyle?: CanvasDrawStyle;
+
+        /**
+         * 轮廓宽度。
+         *
+         * @since v0.19.0
+         */
+        readonly strokeWidth?: number;
+    }
+
+    /**
+     * 画板绘画圆弧选项。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export interface CanvasDrawArcOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 起始角度。
+         *
+         * @since v0.19.0
+         */
+        readonly fromAngle?: number;
+
+        /**
+         * 经过角度。
+         *
+         * @since v0.19.0
+         */
+        readonly sweepAngle?: number;
+
+        /**
+         * 是否使用圆心，是则圆心在矩形区域内，反之则不在。
+         *
+         * @since v0.19.0
+         */
+        readonly useCenter?: boolean;
+
+        /**
+         * 绘图矩形区域。
+         *
+         * @since v0.19.0
+         */
+        readonly rect?: IntoRect;
+
+        /**
+         * 圆弧颜色。
+         *
+         * @since v0.19.0
+         */
+        readonly color?: number;
+
+        /**
+         * 绘图方式，默认为 `CanvasDrawStyle.Fill`。
+         *
+         * @since v0.19.0
+         */
+        readonly drawStyle?: CanvasDrawStyle;
+
+        /**
+         * 轮廓宽度。
+         *
+         * @since v0.19.0
+         */
+        readonly strokeWidth?: number;
+    }
+
+    /**
+     * 画板绘画点集选项。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export interface CanvasDrawPointsOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 点集合。
+         *
+         * @since v0.19.0
+         */
+        readonly points?: IntoPoint[];
+
+        /**
+         * 点在绘制时的连接方式，默认为 `CanvasPointMode.Points`。
+         *
+         * @since v0.19.0
+         */
+        readonly pointMode?: CanvasPointMode;
+
+        /**
+         * 点颜色。
+         *
+         * @since v0.19.0
+         */
+        readonly color?: number;
+
+        /**
+         * 轮廓宽度。
+         *
+         * @since v0.19.0
+         */
+        readonly strokeWidth?: number;
+
+        /**
+         * 线条末端形状，默认为 `CanvasStrokeCap.Butt`。
+         *
+         * @since v0.19.0
+         */
+        readonly strokeCap?: CanvasStrokeCap;
+    }
+
+    /**
+     * 画板绘画文字选项。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export interface CanvasDrawTextOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 文本。
+         *
+         * @since v0.19.0
+         */
+        readonly text?: string;
+
+        /**
+         * 文本显示矩形区域。
+         *
+         * @since v0.19.0
+         */
+        readonly rect?: IntoRect;
+
+        /**
+         * 文字颜色。
+         *
+         * @since v0.19.0
+         */
+        readonly fontColor?: number;
+
+        /**
+         * 文字字号。
+         *
+         * @since v0.19.0
+         */
+        readonly fontSize?: number;
+
+        /**
+         * 文字超出显示区域时的处理方式，默认为 `CanvasTextOverflow.Clip`。
+         *
+         * @since v0.19.0
+         */
+        readonly textOverflow?: CanvasTextOverflow;
+
+        /**
+         * 最大行数。
+         *
+         * @since v0.19.0
+         */
+        readonly maxLines?: number;
+    }
+
+    /**
+     * 画板，可以在屏幕中作画图形。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export class Canvas {
+        /**
+         * 从构造选项构造画板。
+         *
+         * @param options - 画板构造选项
+         * @returns 画板实例
+         *
+         * @since v0.19.0
+         */
+        static from(options?: CanvasConstructorOptions): Canvas;
+
+        /**
+         * 画板的 ID。
+         *
+         * @since v0.19.0
+         */
         readonly id: string;
 
         private constructor();
 
-        show(): Promise<Floater>;
+        /**
+         * 显示画板。
+         *
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        show(): Promise<Canvas>;
 
-        updatePosition(x: number, y: number): Floater;
+        /**
+         * 关闭画板。
+         *
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        close(): Promise<Canvas>;
 
-        updateSize(width: number, heigth: number): Floater;
+        /**
+         * 更新画板位置。
+         *
+         * @param x - 画板左上角的 X 坐标
+         * @param y - 画板左上角的 Y 坐标
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        updatePosition(x: number, y: number): Canvas;
 
-        updateBackgroundColor(color: number): Floater;
+        /**
+         * 更新画板大小。
+         *
+         * @param width - 画板宽度
+         * @param height - 画板高度
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        updateSize(width: number, heigth: number): Canvas;
 
-        updateText(text: string): Floater;
+        /**
+         * 更新画板背景颜色。
+         *
+         * @param color - 颜色值
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        updateBackgroundColor(color: number): Canvas;
 
-        updateTextColor(color: number): Floater;
+        /**
+         * 在画板上绘制线条。
+         *
+         * @param options - 画板绘画线条选项
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        drawLine(options?: CanvasDrawLineOptions): Canvas;
 
-        close(): Promise<Floater>;
+        /**
+         * 在画板上绘制矩形。
+         *
+         * @param options - 画板绘画矩形选项
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        drawRect(options?: CanvasDrawRectOptions): Canvas;
+
+        /**
+         * 在画板上绘制图像。
+         *
+         * @param options - 画板绘画图像选项
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        drawImage(options?: CanvasDrawImageOptions): Canvas;
+
+        /**
+         * 在画板上绘制圆角矩形。
+         *
+         * @param options - 画板绘画圆角矩形选项
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        drawRoundRect(options?: CanvasDrawRoundRectOptions): Canvas;
+
+        /**
+         * 在画板上绘制圆。
+         *
+         * @param options - 画板绘画圆选项
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        drawCircle(options?: CanvasDrawCircleOptions): Canvas;
+
+        /**
+         * 在画板上绘制椭圆。
+         *
+         * @param options - 画板绘画椭圆选项
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        drawOval(options?: CanvasDrawOvalOptions): Canvas;
+
+        /**
+         * 在画板上绘制圆弧。
+         *
+         * @param options - 画板绘画圆弧选项
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        drawArc(options?: CanvasDrawArcOptions): Canvas;
+
+        /**
+         * 在画板上绘制点集。
+         *
+         * @param options - 画板绘画点集选项
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        drawPoints(options?: CanvasDrawPointsOptions): Canvas;
+
+        /**
+         * 在画板上绘制文字。
+         *
+         * @param options - 画板绘画文字选项
+         * @returns 画板自身
+         *
+         * @since v0.19.0
+         */
+        drawText(options?: CanvasDrawTextOptions): Canvas;
     }
 
     /**
+     * 文字画板构造选项。
+     *
+     * @since v0.19.0
      * @category Floater 悬浮窗
      */
-    export class FloaterBuilder {
+    export interface TextCanvasConstructorOptions {
+        /**
+         * ID，如不提供则会分配唯一ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id?: string;
+
+        /**
+         * 画板左上角的 X 坐标。
+         *
+         * @since v0.19.0
+         */
+        readonly x?: number;
+
+        /**
+         * 画板左上角的 Y 坐标。
+         *
+         * @since v0.19.0
+         */
+        readonly y?: number;
+
+        /**
+         * 画板宽度。
+         *
+         * @since v0.19.0
+         */
+        readonly width?: number;
+
+        /**
+         * 画板高度。
+         *
+         * @since v0.19.0
+         */
+        readonly height?: number;
+
+        /**
+         * 画板背景颜色。
+         *
+         * @since v0.19.0
+         */
+        readonly backgroundColor?: number;
+
+        /**
+         * 文字颜色。
+         *
+         * @since v0.19.0
+         */
+        readonly fontColor?: number;
+
+        /**
+         * 文字字号。
+         *
+         * @since v0.19.0
+         */
+        readonly fontSize?: number;
+
+        /**
+         * 文字超出显示区域时的处理方式，默认为 `CanvasTextOverflow.Clip`。
+         *
+         * @since v0.19.0
+         */
+        readonly textOverflow?: CanvasTextOverflow;
+
+        /**
+         * 最大行数。
+         *
+         * @since v0.19.0
+         */
+        readonly maxLines?: number;
+    }
+
+    /**
+     * 文字画板，可以在屏幕中显示文字。
+     *
+     * @since v0.19.0
+     * @category Floater 悬浮窗
+     */
+    export class TextCanvas {
+        /**
+         * 从构造选项构造文字画板。
+         *
+         * @param options - 文字画板构造选项
+         * @returns 文字画板实例
+         *
+         * @since v0.19.0
+         */
+        static from(options?: TextCanvasConstructorOptions): TextCanvas;
+
+        /**
+         * 文字画板的 ID。
+         *
+         * @since v0.19.0
+         */
+        readonly id: string;
+
         private constructor();
 
-        setPosition(x: number, y: number): FloaterBuilder;
+        /**
+         * 显示文字画板。
+         *
+         * @returns 文字画板自身
+         *
+         * @since v0.19.0
+         */
+        show(): Promise<TextCanvas>;
 
-        setSize(width: number, heigth: number): FloaterBuilder;
+        /**
+         * 关闭文字画板。
+         *
+         * @returns 文字画板自身
+         *
+         * @since v0.19.0
+         */
+        close(): Promise<TextCanvas>;
 
-        setBackgroundColor(color: number): FloaterBuilder;
+        /**
+         * 更新文字画板位置。
+         *
+         * @param x - 文字画板左上角的 X 坐标
+         * @param y - 文字画板左上角的 Y 坐标
+         * @returns 文字画板自身
+         *
+         * @since v0.19.0
+         */
+        updatePosition(x: number, y: number): TextCanvas;
 
-        setText(text: string): FloaterBuilder;
+        /**
+         * 更新文字画板大小。
+         *
+         * @param width - 文字画板宽度
+         * @param height - 文字画板高度
+         * @returns 文字画板自身
+         *
+         * @since v0.19.0
+         */
+        updateSize(width: number, heigth: number): TextCanvas;
 
-        setTextColor(color: number): FloaterBuilder;
+        /**
+         * 更新文字画板背景颜色。
+         *
+         * @param color - 颜色值
+         * @returns 文字画板自身
+         *
+         * @since v0.19.0
+         */
+        updateBackgroundColor(color: number): TextCanvas;
 
-        build(): Floater;
+        /**
+         * 更新文字颜色。
+         *
+         * @param color - 颜色值
+         * @returns 文字画板自身
+         *
+         * @since v0.19.0
+         */
+        updateFontColor(color: number): TextCanvas;
+
+        /**
+         * 更新文字字号。
+         *
+         * @param fontSize - 字号
+         * @returns 文字画板自身
+         *
+         * @since v0.19.0
+         */
+        updateFontSize(fontSize: number): TextCanvas;
+
+        /**
+         * 更新文字溢出处理方式。
+         *
+         * @param textOverflow - 文字溢出处理方式
+         * @returns 文字画板自身
+         *
+         * @since v0.19.0
+         */
+        updateTextOverflow(textOverflow: CanvasTextOverflow): TextCanvas;
+
+        /**
+         * 更新最大行数。
+         *
+         * @param maxLines - 最大行数
+         * @returns 文字画板自身
+         *
+         * @since v0.19.0
+         */
+        updateMaxLines(maxLines: number): TextCanvas;
     }
 
     /**
