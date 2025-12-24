@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 /**
- * @version 0.20.0
+ * @version 0.21.0
  */
 declare namespace Autodn {
     /**
@@ -1975,7 +1975,7 @@ declare namespace Autodn {
         /**
          * 检测矩形区域。
          */
-        readonly region?: Rect;
+        readonly region?: IntoRect;
         /**
          * 检测置信度阈值，范围 [0.0, 1.0]，数值越高则获得的区域越少。
          */
@@ -2004,7 +2004,7 @@ declare namespace Autodn {
         /**
          * 识别矩形区域。
          */
-        readonly region?: Rect;
+        readonly region?: IntoRect;
         /**
          * 识别图像输入长度。
          */
@@ -2110,67 +2110,6 @@ declare namespace Autodn {
          * @since v0.16.0
          */
         recycle(): void;
-
-        /**
-         * 设置识别区域，设置的识别区域必须在图片范围内。
-         *
-         * @param ltrb - 矩形 LTRB 数组
-         * @returns Paddle 模型自身
-         *
-         * @example
-         * ```ts
-         * // 设置识别区域为 (100, 100) (200, 200) 的区域
-         * paddle.setRegion([100, 100, 200, 200])
-         * ```
-         *
-         * @since v0.16.0
-         */
-        setRegion(ltrb: RectData): PaddleModel;
-
-        /**
-         * @param rect - 矩形构造选项
-         * @returns Paddle 模型自身
-         *
-         * @example
-         * ```ts
-         * // 设置识别区域为 (100, 100) (200, 200) 的区域
-         * paddle.setRegion(new Auto.Rect(100, 100, 200, 200))
-         * ```
-         *
-         * @since v0.18.0
-         */
-        setRegion(rect: Rect): PaddleModel;
-
-        /**
-         * @param options - 矩形构造选项
-         * @returns Paddle 模型自身
-         *
-         * @example
-         * ```ts
-         * // 设置识别区域为 (100, 100) (200, 200) 的区域
-         * paddle.setRegion({ left: 100, top: 100, right: 200, bottom: 200 })
-         * ```
-         *
-         * @since v0.16.0
-         */
-        setRegion(options: RectConstructorOptions): PaddleModel;
-
-        /**
-         * @param left - 矩形 L 坐标
-         * @param top - 矩形 T 坐标
-         * @param right - 矩形 R 坐标
-         * @param bottom - 矩形 B 坐标
-         * @returns Paddle 模型自身
-         *
-         * @example
-         * ```ts
-         * // 设置识别区域为 (100, 100) (200, 200) 的区域
-         * paddle.setRegion(100, 100, 200, 200)
-         * ```
-         *
-         * @since v0.16.0
-         */
-        setRegion(left: number | null, top: number | null, right: number | null, bottom: number | null): PaddleModel;
 
         /**
          * 设置检测选项。
@@ -2306,6 +2245,121 @@ declare namespace Autodn {
     }
 
     /**
+     * Yolo 检测选项。
+     *
+     * @since v0.21.0
+     * @category AI 人工智能
+     */
+    export interface YoloDetOptions {
+        /**
+         * 检测矩形区域。
+         */
+        readonly region?: IntoRect;
+        /**
+         * 检测图像输入长度。
+         */
+        readonly inputLength?: number;
+        /**
+         * 置信度阈值，范围 [0.0, 1.0]，数值越高则获得的结果越少。
+         */
+        readonly confidenceThreshold?: number;
+        /**
+         * NMS 阈值，范围 [0.0, 1.0]，数值越高则获得的结果越少。
+         */
+        readonly nmsThreshold?: number;
+    }
+
+    /**
+     * Yolo 检测结果。
+     *
+     * @since v0.21.0
+     * @category AI 人工智能
+     */
+    export interface YoloDetResult {
+        /**
+         * 点集合。
+         */
+        readonly box: Point[];
+        /**
+         * 矩形。
+         */
+        readonly rect: Rect;
+        /**
+         * 置信度。
+         */
+        readonly score: number;
+        /**
+         * 类别。
+         */
+        readonly clazz: string;
+    }
+
+    /**
+     * Yolo 模型对象。
+     *
+     * @since v0.21.0
+     * @category AI 人工智能
+     */
+    export class YoloModel {
+        private constructor();
+
+        /**
+         * 回收对象，释放资源，回收对象后再使用对象进行识别将会导致报错。
+         *
+         * @since v0.21.0
+         */
+        recycle(): void;
+
+        /**
+         * 设置检测选项。
+         *
+         * @param detOptions - 检测选项
+         * @returns Self
+         *
+         * @example
+         * ```ts
+         * const yolo = yolo.setDetOptions({
+         *     confidenceThreshold: 0.3,
+         *     nmsThreshold: 0.45,
+         * })
+         * ```
+         *
+         * @since v0.21.0
+         */
+        setDetOptions(detOptions: YoloDetOptions): YoloModel;
+
+        /**
+         * 使用媒体投影权限检测当前屏幕。
+         *
+         * @returns Yolo 检测结果集合
+         *
+         * @example
+         * ```ts
+         * const results = await yolo.det()
+         * ```
+         *
+         * @since v0.21.0
+         */
+        det(): Promise<YoloDetResult[]>;
+
+        /**
+         * 检测指定图片。
+         *
+         * @param path - 检测图片的路径
+         * @returns Yolo 检测结果集合
+         *
+         * @example
+         * ```ts
+         * const imgPath = Android.getExternalStoragePath() + "/Resources/det.png"
+         * const results = await yolo.det(imgPath)
+         * ```
+         *
+         * @since v0.21.0
+         */
+        det(path: string): Promise<YoloDetResult[]>;
+    }
+
+    /**
      * 加载 Paddle 模型，可用于检测、识别文字。
      *
      * @param detModelPath - 检测模型完整路径
@@ -2325,6 +2379,25 @@ declare namespace Autodn {
      * @category AI 人工智能
      */
     export function loadPaddleModel(detModelPath: string, recModelPath: string, dictPath: string): Promise<PaddleModel>;
+
+    /**
+     * 加载 Yolo 模型。
+     *
+     * @param modelPath - 模型完整路径
+     * @param clazzesPath - 类别列表完整路径
+     * @returns Yolo 模型对象
+     *
+     * @example
+     * ```ts
+     * const modelPath = Android.getExternalStoragePath() + "/Resources/yolo.onnx"
+     * const clazzes = Android.getExternalStoragePath() + "/Resources/clazzes.txt"
+     * const yolo = await Autodn.loadYoloModel(modelPath, clazzesPath)
+     * ```
+     *
+     * @since v0.21.0
+     * @category AI 人工智能
+     */
+    export function loadYoloModel(modelPath: string, clazzesPath: string): Promise<YoloModel>;
 
     /**
      * @category App 应用
