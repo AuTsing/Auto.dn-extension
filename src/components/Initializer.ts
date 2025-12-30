@@ -21,14 +21,17 @@ export default class Initializer {
         return url.href;
     }
 
-    private async updateDts(): Promise<void> {
-        const denoConfig = await this.workspace.readDenoConfig();
+    async isNeedToUpdateDts(): Promise<boolean> {
         const dtsUrl = this.getDtsUrl();
+        const denoConfig = await this.workspace.readDenoConfig();
         const types = denoConfig?.compilerOptions?.types ?? [];
-        if (types.includes(dtsUrl)) {
-            return;
-        }
+        return !types.includes(dtsUrl);
+    }
 
+    private async updateDts(): Promise<void> {
+        const dtsUrl = this.getDtsUrl();
+        const denoConfig = await this.workspace.readDenoConfig();
+        const types = denoConfig?.compilerOptions?.types ?? [];
         const filteredTypes = types.filter(it => !it.endsWith('lib.autodn.d.ts'));
         filteredTypes.push(dtsUrl);
         denoConfig.compilerOptions = denoConfig.compilerOptions ?? {};
@@ -91,13 +94,15 @@ export default class Initializer {
                 return;
             }
 
-            const update = this.storage.getUpdateDts();
-            if (update === false) {
+            if (this.storage.getUpdateDts() === false) {
+                return;
+            }
+
+            if ((await this.isNeedToUpdateDts()) === false) {
                 return;
             }
 
             await this.updateDts();
-
             await new Promise(resolve => setTimeout(() => resolve(null), 1000));
             await Vscode.commands.executeCommand('deno.client.restart');
 

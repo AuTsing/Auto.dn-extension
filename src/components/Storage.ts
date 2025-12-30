@@ -8,11 +8,11 @@ export enum Configuration {
 
 export default class Storage {
     private readonly state: Vscode.Memento;
-    private readonly configuration: Vscode.WorkspaceConfiguration;
+    private readonly workspace: Workspace;
 
     constructor(context: Vscode.ExtensionContext, workspace: Workspace) {
         this.state = context.globalState;
-        this.configuration = workspace.getConfiguration();
+        this.workspace = workspace;
     }
 
     getWsUrls(): string[] {
@@ -34,18 +34,18 @@ export default class Storage {
     }
 
     getEnable(): boolean {
-        return this.configuration.get<boolean>(Configuration.Enable, false);
+        return this.workspace.getConfiguration().get<boolean>(Configuration.Enable, false);
     }
 
     async setEnable(value: boolean) {
-        await this.configuration.update(Configuration.Enable, value);
+        await this.workspace.getConfiguration().update(Configuration.Enable, value);
     }
 
     getUpdateDts(): boolean {
-        return this.configuration.get<boolean>(Configuration.UpdateDts, true);
+        return this.workspace.getConfiguration().get<boolean>(Configuration.UpdateDts, true);
     }
 
     async setUpdateDts(value: boolean) {
-        await this.configuration.update(Configuration.UpdateDts, value);
+        await this.workspace.getConfiguration().update(Configuration.UpdateDts, value);
     }
 }
