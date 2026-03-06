@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 /**
- * @version 0.21.0
+ * @version 0.22.4
  */
 declare namespace Autodn {
     /**
@@ -2212,7 +2212,7 @@ declare namespace Autodn {
          *
          * @since v0.16.0
          */
-        rec(path: string): Promise<PaddleDetResult>;
+        rec(path: string): Promise<PaddleRecResult>;
 
         /**
          * 使用媒体投影权限检测识别当前屏幕。
