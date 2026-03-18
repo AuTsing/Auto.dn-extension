@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 /**
- * @version 0.22.4
+ * @version 0.23.0
  */
 declare namespace Autodn {
     /**
@@ -2475,11 +2475,31 @@ declare namespace Autodn {
     export function getCoreVersion(): string;
 
     /**
+     * 获取内部文件绝对路径。
+     *
+     * @returns 内部文件绝对路径
+     *
+     * @since v0.23.0
      * @category App 应用
      */
     export function getInternalStoragePath(): string;
 
     /**
+     * 获取内部缓存绝对路径。
+     *
+     * @returns 内部缓存绝对路径
+     *
+     * @since v0.23.0
+     * @category App 应用
+     */
+    export function getInternalCachePath(): string;
+
+    /**
+     * 获取外部文件绝对路径。
+     *
+     * @returns 外部文件绝对路径
+     *
+     * @since v0.23.0
      * @category App 应用
      */
     export function getExternalStoragePath(): string;
