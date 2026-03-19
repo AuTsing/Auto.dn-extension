@@ -4,18 +4,18 @@ import Output from './components/Output';
 import Wsd from './components/Wsd';
 import Asker from './components/Asker';
 import Registry from './components/Registry';
-import Commander from './components/Commander';
 import Workspace from './components/Workspace';
 import StatusBar from './components/StatusBar';
 import Storage from './components/Storage';
+import WsClient from './components/WsClient';
 
 export function activate(context: Vscode.ExtensionContext) {
     const workspace = new Workspace();
     const registry = new Registry(context);
     const storage = new Storage(context, workspace);
     const asker = new Asker(storage);
-    const commander = new Commander();
-    const wsd = new Wsd(asker, commander, workspace, storage);
+    const wsClient = new WsClient();
+    const wsd = new Wsd(asker, workspace, storage, wsClient);
     const initializer = new Initializer(context, workspace, storage);
 
     Output.instance = new Output();

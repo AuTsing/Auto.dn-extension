@@ -1,210 +1,81 @@
-import * as WebSocket from 'ws';
-import * as FsPromises from 'fs/promises';
-import * as Path from 'path';
+import { readFile, writeFile } from 'fs/promises';
+import { join } from 'path';
+import { randomUUID } from 'crypto';
+import { WebSocket } from 'ws';
 import Output from './Output';
 import Asker from './Asker';
-import Commander, {
-    Command,
-    Commands,
-    ProjectState,
-    RemoveCommand,
-    RunCommand,
-    SnapshotCommand,
-    StatusCommand,
-    StopCommand,
-    UploadCommand,
-} from './Commander';
 import Workspace from './Workspace';
-import StatusBar from './StatusBar';
+import StatusBar, { StatusItem } from './StatusBar';
 import Storage from './Storage';
+import WsClient, {
+    Commands,
+    LogLevel,
+    GetRunningProjects,
+    Stop,
+    Run,
+    Delete,
+    Upload,
+    Download,
+    Log,
+    Snapshot,
+} from './WsClient';
 
 export default class Wsd {
     private readonly asker: Asker;
-    private readonly commander: Commander;
     private readonly workspace: Workspace;
     private readonly storage: Storage;
+    private readonly wsClient: WsClient;
     private wsc: WebSocket | null;
     private connecting: boolean;
     private snapshoting: boolean;
 
-    constructor(asker: Asker, commander: Commander, workspace: Workspace, storage: Storage) {
+    constructor(asker: Asker, workspace: Workspace, storage: Storage, wsClient: WsClient) {
         this.asker = asker;
-        this.commander = commander;
         this.workspace = workspace;
         this.storage = storage;
+        this.wsClient = wsClient;
         this.wsc = null;
         this.connecting = false;
         this.snapshoting = false;
     }
 
-    private async connect(url: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            if (this.wsc) {
+    private async connect(url: string): Promise<WebSocket> {
+        const conn = await new Promise<WebSocket>((resolve, reject) => {
+            if (this.wsc !== null) {
                 this.disconnect();
             }
             this.storage.addWsUrl(url);
             const wsc = new WebSocket(url, { handshakeTimeout: 5000 });
             wsc.on('open', () => {
-                this.wsc = wsc;
                 Output.println(`已连接设备: ${url}`);
                 StatusBar.connected(url);
-                resolve();
+                resolve(wsc);
             });
             wsc.on('error', e => {
                 reject(e);
             });
             wsc.on('close', () => {
-                if (this.wsc) {
+                if (this.wsc !== null) {
                     Output.println(`已断开设备: ${url}`);
                     StatusBar.disconnected(url);
                     this.wsc = null;
                 }
             });
             wsc.on('message', message => {
-                this.commander.handleMessage(message.toString('utf-8'));
+                this.wsClient.handleMessage(message as Uint8Array);
             });
         });
+        return conn;
     }
 
     private disconnect() {
-        if (!this.wsc) {
+        if (this.wsc === null) {
             throw new Error('未连接设备');
         }
         this.wsc.terminate();
     }
 
-    private async send(message: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            if (!this.wsc) {
-                reject('未连接设备');
-                return;
-            }
-            this.wsc.send(message, e => {
-                if (!e) {
-                    resolve();
-                } else {
-                    reject(e);
-                }
-            });
-        });
-    }
-
-    private async sendCommand(cmd: Command) {
-        const message = this.commander.adaptCommand(cmd);
-        await this.send(message);
-    }
-
-    private async runProject(): Promise<void> {
-        const workspaceFolder = this.workspace.getWorkspaceFolder();
-        const name = workspaceFolder.name;
-        const cmd: RunCommand = {
-            cmd: Commands.Run,
-            data: { name },
-        };
-        const resultPromise = this.commander.waitForResultData();
-        await this.sendCommand(cmd);
-        const result = await resultPromise;
-        if (!result.success) {
-            throw Error(result.message);
-        }
-    }
-
-    private async stopProject(): Promise<void> {
-        const workspaceFolder = this.workspace.getWorkspaceFolder();
-        const name = workspaceFolder.name;
-        const cmd: StopCommand = {
-            cmd: Commands.Stop,
-            data: { name },
-        };
-        const resultPromise = this.commander.waitForResultData();
-        await this.sendCommand(cmd);
-        const result = await resultPromise;
-        if (!result.success) {
-            throw Error(result.message);
-        }
-    }
-
-    private async removeProject(): Promise<void> {
-        const doingRemove = StatusBar.doing('清理工程中');
-
-        const projectNames = [] as string[];
-
-        const denoConfig = await this.workspace.readDenoConfig();
-        const imports = Object.values(denoConfig.imports ?? {});
-        const localImports = imports.filter(it => typeof it === 'string' && it.startsWith('.')) as string[];
-        const localImportNames = localImports.map(it => Path.basename(it));
-        projectNames.push(...localImportNames);
-
-        const workspaceFolder = this.workspace.getWorkspaceFolder();
-        projectNames.push(workspaceFolder.name);
-
-        for (const name of projectNames) {
-            const cmd: RemoveCommand = {
-                cmd: Commands.Remove,
-                data: { name },
-            };
-            const resultPromise = this.commander.waitForResultData();
-            await this.sendCommand(cmd);
-            const result = await resultPromise;
-            if (!result.success) {
-                throw Error(result.message);
-            }
-        }
-
-        doingRemove?.dispose();
-    }
-
-    private async uploadProject(): Promise<void> {
-        const doingUpload = StatusBar.doing('上传工程中');
-
-        const files = await this.workspace.getWrokspaceFiles();
-        for (const file of files) {
-            const buffer = await FsPromises.readFile(file.absolutePath);
-            const cmd: UploadCommand = {
-                cmd: Commands.Upload,
-                data: {
-                    dst: file.remotePath,
-                    file: Array.from(new Uint8Array(buffer)),
-                },
-            };
-            const resultPromise = this.commander.waitForResultData();
-            await this.sendCommand(cmd);
-            const result = await resultPromise;
-            if (!result.success) {
-                throw Error(result.message);
-            }
-        }
-
-        doingUpload?.dispose();
-    }
-
-    private async getProjectStatus(): Promise<ProjectState> {
-        const workspaceFolder = this.workspace.getWorkspaceFolder();
-        const name = workspaceFolder.name;
-
-        const cmd: StatusCommand = {
-            cmd: Commands.Status,
-            data: {
-                name,
-                state: ProjectState.Free,
-            },
-        };
-        const resultPromise = this.commander.waitForResultData();
-        const statusDataPromise = this.commander.waitForStatusData();
-        await this.sendCommand(cmd);
-        const result = await resultPromise;
-        if (!result.success) {
-            this.commander.resetStatusConsumers();
-            throw Error(result.message);
-        }
-        const statusData = await statusDataPromise;
-        return statusData.state;
-    }
-
     private async connectAutomatically(): Promise<void> {
-        if (this.wsc) {
-            return;
-        }
         const doing = StatusBar.doing('连接中');
         try {
             const urls = this.storage.getWsUrls();
@@ -217,7 +88,8 @@ export default class Wsd {
             this.connecting = true;
             const lastUrl = urls[urls.length - 1];
             Output.println(`未连接设备，尝试连接最后使用设备: ${lastUrl}`);
-            await this.connect(lastUrl);
+            this.wsc = await this.connect(lastUrl);
+            Output.println('连接设备成功:', lastUrl);
         } catch (e) {
             throw e;
         } finally {
@@ -226,21 +98,20 @@ export default class Wsd {
         }
     }
 
-    private async snapshot(): Promise<Uint8Array> {
-        const cmd: SnapshotCommand = {
-            cmd: Commands.Snapshot,
-            data: { file: [] },
-        };
-        const resultPromise = this.commander.waitForResultData();
-        const snapshotDataPromise = this.commander.waitForSnapshotData();
-        await this.sendCommand(cmd);
-        const result = await resultPromise;
-        if (!result.success) {
-            this.commander.resetSnapshotConsumers();
-            throw Error(result.message);
+    private async getConn(): Promise<WebSocket> {
+        if (this.wsc === null) {
+            await this.connectAutomatically();
         }
-        const snapshotData = await snapshotDataPromise;
-        return Uint8Array.from(snapshotData.file);
+        if (this.wsc === null) {
+            throw Error('未连接设备');
+        }
+        return this.wsc;
+    }
+
+    private getProjectName(): string {
+        const workspaceFolder = this.workspace.getWorkspaceFolder();
+        const name = workspaceFolder.name;
+        return name;
     }
 
     async handleConnect() {
@@ -251,7 +122,7 @@ export default class Wsd {
             }
             this.connecting = true;
             const url = await this.asker.askForWsUrlWithHistory();
-            await this.connect(url);
+            this.wsc = await this.connect(url);
             Output.println('连接设备成功:', url);
         } catch (e) {
             Output.eprintln('连接设备失败:', e);
@@ -269,39 +140,165 @@ export default class Wsd {
         }
     }
 
+    private async run(conn: WebSocket, name: string): Promise<void> {
+        const message: Run = {
+            id: randomUUID(),
+            cmd: Commands.Run,
+            data: { name: name },
+        };
+        await this.wsClient.run(conn, message);
+    }
+
+    private async stop(conn: WebSocket, name: string): Promise<void> {
+        const message: Stop = {
+            id: randomUUID(),
+            cmd: Commands.Stop,
+            data: { name: name },
+        };
+        await this.wsClient.stop(conn, message);
+    }
+
+    private async delete(conn: WebSocket, path: string): Promise<void> {
+        const message: Delete = {
+            id: randomUUID(),
+            cmd: Commands.Delete,
+            data: { path: path },
+        };
+        await this.wsClient.delete(conn, message);
+    }
+
+    private async upload(conn: WebSocket, path: string, file: Uint8Array): Promise<void> {
+        const message: Upload = {
+            id: randomUUID(),
+            cmd: Commands.Upload,
+            data: { path: path, file: file },
+        };
+        await this.wsClient.upload(conn, message);
+    }
+
+    private async download(conn: WebSocket, path: string): Promise<Uint8Array> {
+        const message: Download = {
+            id: randomUUID(),
+            cmd: Commands.Download,
+            data: { path: path },
+        };
+        const file = await this.wsClient.download(conn, message);
+        return file;
+    }
+
+    private async log(conn: WebSocket, level: LogLevel, message: string): Promise<void> {
+        const logMessage: Log = {
+            id: randomUUID(),
+            cmd: Commands.Log,
+            data: { level: level, message: message },
+        };
+        await this.wsClient.log(conn, logMessage);
+    }
+
+    private async snapshot(conn: WebSocket): Promise<Uint8Array> {
+        const message: Snapshot = {
+            id: randomUUID(),
+            cmd: Commands.Snapshot,
+            data: {},
+        };
+        const file = await this.wsClient.snapshot(conn, message);
+        return file;
+    }
+
+    private async getRunningProjects(conn: WebSocket): Promise<string[]> {
+        const message: GetRunningProjects = {
+            id: randomUUID(),
+            cmd: Commands.GetRunningProjects,
+            data: {},
+        };
+        const projects = await this.wsClient.getRunningProjects(conn, message);
+        return projects;
+    }
+
     async handleRun() {
+        const doings: StatusItem[] = [];
         try {
-            await this.connectAutomatically();
-            const state = await this.getProjectStatus();
-            if (state === ProjectState.Running) {
-                await this.stopProject();
+            const conn = await this.getConn();
+            const name = this.getProjectName();
+
+            const projects = await this.getRunningProjects(conn);
+            if (projects.includes(name)) {
+                const doingStop = StatusBar.doing('停止工程中');
+                if (doingStop !== undefined) {
+                    doings.push(doingStop);
+                }
+                await this.stop(conn, name);
             }
-            await this.removeProject();
-            await this.uploadProject();
-            await this.runProject();
-            Output.println('运行工程成功');
+
+            const doingDelete = StatusBar.doing('清理工程中');
+            if (doingDelete !== undefined) {
+                doings.push(doingDelete);
+            }
+            await this.delete(conn, '');
+
+            const doingUpload = StatusBar.doing('上传工程中');
+            if (doingUpload !== undefined) {
+                doings.push(doingUpload);
+            }
+            const workspaceFiles = await this.workspace.getWrokspaceFiles();
+            for (const workspaceFile of workspaceFiles) {
+                const file = await readFile(workspaceFile.absolutePath);
+                await this.upload(conn, workspaceFile.remotePath, file as Uint8Array);
+                // TODO(move remotePath to relativePath)
+            }
+
+            const doingRun = StatusBar.doing('运行工程中');
+            if (doingRun !== undefined) {
+                doings.push(doingRun);
+            }
+            await this.run(conn, name);
         } catch (e) {
             Output.eprintln('运行工程失败:', e);
+        } finally {
+            doings.forEach(it => it.dispose());
         }
     }
 
     async handleStop() {
+        const doing = StatusBar.doing('停止工程中');
         try {
-            await this.connectAutomatically();
-            await this.stopProject();
+            const conn = await this.getConn();
+            const name = this.getProjectName();
+            await this.stop(conn, name);
         } catch (e) {
             Output.eprintln('停止工程失败:', e);
+        } finally {
+            doing?.dispose();
         }
     }
 
     async handleUpload() {
+        const doings: StatusItem[] = [];
         try {
-            await this.connectAutomatically();
-            await this.removeProject();
-            await this.uploadProject();
+            const conn = await this.getConn();
+
+            const doingDelete = StatusBar.doing('清理工程中');
+            if (doingDelete !== undefined) {
+                doings.push(doingDelete);
+            }
+            await this.delete(conn, '');
+
+            const doingUpload = StatusBar.doing('上传工程中');
+            if (doingUpload !== undefined) {
+                doings.push(doingUpload);
+            }
+            const workspaceFiles = await this.workspace.getWrokspaceFiles();
+            for (const workspaceFile of workspaceFiles) {
+                const file = await readFile(workspaceFile.absolutePath);
+                await this.upload(conn, workspaceFile.remotePath, file as Uint8Array);
+                // TODO(move remotePath to relativePath)
+            }
+
             Output.println('工程已上传');
         } catch (e) {
             Output.eprintln('上传工程失败:', e);
+        } finally {
+            doings.forEach(it => it.dispose());
         }
     }
 
@@ -312,14 +309,16 @@ export default class Wsd {
                 throw new Error('正在尝试屏幕截图中');
             }
             this.snapshoting = true;
-            await this.connectAutomatically();
-            const img = await this.snapshot();
+
+            const conn = await this.getConn();
+            const file = await this.snapshot(conn);
             const saveDir = await this.asker.askForSnapshotSaveDir();
             const now = Date.now();
             const filename = `Snapshot_${now}.png`;
-            const snapshotPng = Path.join(saveDir, filename);
-            await FsPromises.writeFile(snapshotPng, img);
-            Output.println('屏幕截图已保存至:', snapshotPng);
+            const path = join(saveDir, filename);
+            await writeFile(path, file);
+
+            Output.println(`屏幕截图已保存至: ${path}`);
         } catch (e) {
             Output.eprintln('屏幕截图失败:', e);
         } finally {
