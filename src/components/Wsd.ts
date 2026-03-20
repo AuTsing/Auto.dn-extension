@@ -62,7 +62,7 @@ export default class Wsd {
                 }
             });
             wsc.on('message', message => {
-                this.wsClient.handleMessage(message as Uint8Array);
+                this.wsClient.handleMessage(wsc, message as Uint8Array);
             });
         });
         return conn;

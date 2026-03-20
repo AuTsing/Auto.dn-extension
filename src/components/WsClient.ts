@@ -1,6 +1,8 @@
+import { readFile, writeFile } from 'fs/promises';
 import * as msgpack from '@msgpack/msgpack';
 import { WebSocket } from 'ws';
 import Output from './Output';
+import StatusBar from './StatusBar';
 
 export enum Commands {
     Run = 'Run',
@@ -160,10 +162,10 @@ export default class WsClient {
         return msgpack.decode(data) as Message;
     }
 
-    private async send(wsc: WebSocket, message: Message): Promise<void> {
+    private async send(conn: WebSocket, message: Message): Promise<void> {
         const messageBytes = this.encode(message);
         await new Promise<void>((resolve, reject) => {
-            wsc.send(messageBytes, e => {
+            conn.send(messageBytes, e => {
                 if (e === undefined) {
                     resolve();
                 } else {
@@ -188,9 +190,9 @@ export default class WsClient {
         resolve(message);
     }
 
-    async run(wsc: WebSocket, message: Run): Promise<void> {
+    async run(conn: WebSocket, message: Run): Promise<void> {
         const deferred = this.waitForResult(message.id);
-        await this.send(wsc, message);
+        await this.send(conn, message);
         const runResult = await deferred;
         if (runResult.cmd !== Commands.RunResult) {
             throw Error(`错误的结果: 期望 ${Commands.RunResult} 实际 ${runResult.cmd}`);
@@ -200,9 +202,9 @@ export default class WsClient {
         }
     }
 
-    async stop(wsc: WebSocket, message: Stop): Promise<void> {
+    async stop(conn: WebSocket, message: Stop): Promise<void> {
         const deferred = this.waitForResult(message.id);
-        await this.send(wsc, message);
+        await this.send(conn, message);
         const stopResult = await deferred;
         if (stopResult.cmd !== Commands.StopResult) {
             throw Error(`错误的结果: 期望 ${Commands.StopResult} 实际 ${stopResult.cmd}`);
@@ -212,9 +214,9 @@ export default class WsClient {
         }
     }
 
-    async delete(wsc: WebSocket, message: Delete): Promise<void> {
+    async delete(conn: WebSocket, message: Delete): Promise<void> {
         const deferred = this.waitForResult(message.id);
-        await this.send(wsc, message);
+        await this.send(conn, message);
         const deleteResult = await deferred;
         if (deleteResult.cmd !== Commands.DeleteResult) {
             throw Error(`错误的结果: 期望 ${Commands.DeleteResult} 实际 ${deleteResult.cmd}`);
@@ -224,9 +226,9 @@ export default class WsClient {
         }
     }
 
-    async upload(wsc: WebSocket, message: Upload): Promise<void> {
+    async upload(conn: WebSocket, message: Upload): Promise<void> {
         const deferred = this.waitForResult(message.id);
-        await this.send(wsc, message);
+        await this.send(conn, message);
         const uploadResult = await deferred;
         if (uploadResult.cmd !== Commands.UploadResult) {
             throw Error(`错误的结果: 期望 ${Commands.UploadResult} 实际 ${uploadResult.cmd}`);
@@ -236,9 +238,9 @@ export default class WsClient {
         }
     }
 
-    async download(wsc: WebSocket, message: Download): Promise<Uint8Array> {
+    async download(conn: WebSocket, message: Download): Promise<Uint8Array> {
         const deferred = this.waitForResult(message.id);
-        await this.send(wsc, message);
+        await this.send(conn, message);
         const downloadResult = await deferred;
         if (downloadResult.cmd !== Commands.DownloadResult) {
             throw Error(`错误的结果: 期望 ${Commands.DownloadResult} 实际 ${downloadResult.cmd}`);
@@ -249,13 +251,13 @@ export default class WsClient {
         return downloadResult.data.file;
     }
 
-    async log(wsc: WebSocket, message: Log): Promise<void> {
-        await this.send(wsc, message);
+    async log(conn: WebSocket, message: Log): Promise<void> {
+        await this.send(conn, message);
     }
 
-    async snapshot(wsc: WebSocket, message: Snapshot): Promise<Uint8Array> {
+    async snapshot(conn: WebSocket, message: Snapshot): Promise<Uint8Array> {
         const deferred = this.waitForResult(message.id);
-        await this.send(wsc, message);
+        await this.send(conn, message);
         const snapshotResult = await deferred;
         if (snapshotResult.cmd !== Commands.SnapshotResult) {
             throw Error(`错误的结果: 期望 ${Commands.SnapshotResult} 实际 ${snapshotResult.cmd}`);
@@ -266,9 +268,9 @@ export default class WsClient {
         return snapshotResult.data.file;
     }
 
-    async getRunningProjects(wsc: WebSocket, message: GetRunningProjects): Promise<string[]> {
+    async getRunningProjects(conn: WebSocket, message: GetRunningProjects): Promise<string[]> {
         const deferred = this.waitForResult(message.id);
-        await this.send(wsc, message);
+        await this.send(conn, message);
         const getRunningProjectsResult = await deferred;
         if (getRunningProjectsResult.cmd !== Commands.GetRunningProjectsResult) {
             throw Error(`错误的结果: 期望 ${Commands.GetRunningProjectsResult} 实际 ${getRunningProjectsResult.cmd}`);
@@ -279,17 +281,103 @@ export default class WsClient {
         return getRunningProjectsResult.data.projects;
     }
 
-    private handleDelete(message: Delete) {}
+    private async handleUpload(conn: WebSocket, message: Upload) {
+        try {
+            const path = message.data.path;
+            const file = message.data.file;
+            await writeFile(path, file);
+            const newMessage: UploadResult = {
+                id: message.id,
+                cmd: Commands.UploadResult,
+                data: { success: true, message: '' },
+            };
+            await this.send(conn, newMessage);
+        } catch (e) {
+            const newMessage: UploadResult = {
+                id: message.id,
+                cmd: Commands.UploadResult,
+                data: {
+                    success: false,
+                    message: `${(e as Error).message} ${(e as Error).stack}`,
+                },
+            };
+            try {
+                await this.send(conn, newMessage);
+            } catch (e2) {
+                Output.eprintln(e2);
+            }
+        }
+    }
 
-    private handleUpload(message: Upload) {}
+    private async handleDownload(conn: WebSocket, message: Download) {
+        try {
+            const path = message.data.path;
+            const file = await readFile(path);
+            const newMessage: DownloadResult = {
+                id: message.id,
+                cmd: Commands.DownloadResult,
+                data: { success: true, message: '', file: file as Uint8Array },
+            };
+            await this.send(conn, newMessage);
+        } catch (e) {
+            const newMessage: DownloadResult = {
+                id: message.id,
+                cmd: Commands.DownloadResult,
+                data: {
+                    success: false,
+                    message: `${(e as Error).message} ${(e as Error).stack}`,
+                    file: new Uint8Array(),
+                },
+            };
+            try {
+                await this.send(conn, newMessage);
+            } catch (e2) {
+                Output.eprintln(e2);
+            }
+        }
+    }
 
-    private handleDownload(message: Download) {}
+    private handleLog(message: Log) {
+        switch (message.data.level) {
+            case LogLevel.Info:
+                Output.println(message.data.message);
+                break;
+            case LogLevel.Warn:
+                Output.wprintln(message.data.message);
+                break;
+            case LogLevel.Error:
+                Output.eprintln(message.data.message);
+                break;
+            default:
+                Output.println(message.data.message);
+                break;
+        }
+    }
 
-    private handleLog(message: Log) {}
+    private async handleSetRunningProjects(conn: WebSocket, message: SetRunningProjects) {
+        try {
+            StatusBar.running(message.data.projects);
+            const newMessage: SetRunningProjectsResult = {
+                id: message.id,
+                cmd: Commands.SetRunningProjectsResult,
+                data: { success: true, message: '' },
+            };
+            await this.send(conn, newMessage);
+        } catch (e) {
+            const newMessage: SetRunningProjectsResult = {
+                id: message.id,
+                cmd: Commands.SetRunningProjectsResult,
+                data: { success: false, message: `${(e as Error).message} ${(e as Error).stack}` },
+            };
+            try {
+                await this.send(conn, newMessage);
+            } catch (e2) {
+                Output.eprintln(e2);
+            }
+        }
+    }
 
-    private handleSetRunningProjects(message: SetRunningProjects) {}
-
-    handleMessage(data: Uint8Array) {
+    handleMessage(conn: WebSocket, data: Uint8Array) {
         try {
             const message = this.decode(data);
             switch (message.cmd) {
@@ -299,20 +387,17 @@ export default class WsClient {
                 case Commands.StopResult:
                     this.resolveResult(message);
                     break;
-                case Commands.Delete:
-                    this.handleDelete(message);
-                    break;
                 case Commands.DeleteResult:
                     this.resolveResult(message);
                     break;
                 case Commands.Upload:
-                    this.handleUpload(message);
+                    this.handleUpload(conn, message);
                     break;
                 case Commands.UploadResult:
                     this.resolveResult(message);
                     break;
                 case Commands.Download:
-                    this.handleDownload(message);
+                    this.handleDownload(conn, message);
                     break;
                 case Commands.DownloadResult:
                     this.resolveResult(message);
@@ -327,7 +412,7 @@ export default class WsClient {
                     this.resolveResult(message);
                     break;
                 case Commands.SetRunningProjects:
-                    this.handleSetRunningProjects(message);
+                    this.handleSetRunningProjects(conn, message);
                     break;
                 case Commands.GetRunningProjectsResult:
                     this.resolveResult(message);
