@@ -382,7 +382,7 @@ export default class Wsd {
             if (doingDelete !== undefined) {
                 doings.push(doingDelete);
             }
-            await this.delete(conn, '');
+            await this.delete(conn, name);
 
             const doingUpload = StatusBar.doing('上传工程中');
             if (doingUpload !== undefined) {
@@ -424,12 +424,13 @@ export default class Wsd {
         const doings: StatusItem[] = [];
         try {
             const conn = await this.getConn();
+            const name = this.getProjectName();
 
             const doingDelete = StatusBar.doing('清理工程中');
             if (doingDelete !== undefined) {
                 doings.push(doingDelete);
             }
-            await this.delete(conn, '');
+            await this.delete(conn, name);
 
             const doingUpload = StatusBar.doing('上传工程中');
             if (doingUpload !== undefined) {

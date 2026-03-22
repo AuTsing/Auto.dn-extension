@@ -1,5 +1,5 @@
-import * as msgpack from '@msgpack/msgpack';
 import { WebSocket } from 'ws';
+import { decode as cbor2decode, encode as cbor2encode } from 'cbor2';
 
 export enum Commands {
     Run = 'Run',
@@ -152,11 +152,11 @@ export default class WsClient {
     }
 
     encode(data: Message): Uint8Array {
-        return msgpack.encode(data);
+        return cbor2encode(data);
     }
 
     decode(data: Uint8Array): Message {
-        return msgpack.decode(data) as Message;
+        return cbor2decode<Message>(data);
     }
 
     resolveResult(message: Message) {
