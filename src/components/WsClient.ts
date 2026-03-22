@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws';
 import { decode as cbor2decode, encode as cbor2encode } from 'cbor2';
 
-export enum Commands {
+export enum WsMessageCmd {
     Run = 'Run',
     RunResult = 'RunResult',
     Stop = 'Stop',
@@ -28,138 +28,412 @@ export enum LogLevel {
     Error = 6,
 }
 
-interface BaseMessage {
-    id: string;
-    cmd: Message['cmd'];
-    data: Message['data'];
+type RawWsMessage =
+    | [WsMessageCmd.Run, Run]
+    | [WsMessageCmd.RunResult, RunResult]
+    | [WsMessageCmd.Stop, Stop]
+    | [WsMessageCmd.StopResult, StopResult]
+    | [WsMessageCmd.Delete, Delete]
+    | [WsMessageCmd.DeleteResult, DeleteResult]
+    | [WsMessageCmd.Upload, Upload]
+    | [WsMessageCmd.UploadResult, UploadResult]
+    | [WsMessageCmd.Download, Download]
+    | [WsMessageCmd.DownloadResult, DownloadResult]
+    | [WsMessageCmd.Log, Log]
+    | [WsMessageCmd.LogResult, LogResult]
+    | [WsMessageCmd.Snapshot, Snapshot]
+    | [WsMessageCmd.SnapshotResult, SnapshotResult]
+    | [WsMessageCmd.SetRunningProjects, SetRunningProjects]
+    | [WsMessageCmd.SetRunningProjectsResult, SetRunningProjectsResult]
+    | [WsMessageCmd.GetRunningProjects, GetRunningProjects]
+    | [WsMessageCmd.GetRunningProjectsResult, GetRunningProjectsResult];
+
+type WsMessageData =
+    | RunData
+    | RunResultData
+    | StopData
+    | StopResultData
+    | DeleteData
+    | DeleteResultData
+    | UploadData
+    | UploadResultData
+    | DownloadData
+    | DownloadResultData
+    | LogData
+    | LogResultData
+    | SnapshotData
+    | SnapshotResultData
+    | SetRunningProjectsData
+    | SetRunningProjectsResultData
+    | GetRunningProjectsData
+    | GetRunningProjectsResultData;
+
+interface RunData {
+    readonly name: string;
 }
 
-export type Message =
-    | Run
-    | RunResult
-    | Stop
-    | StopResult
-    | Delete
-    | DeleteResult
-    | Upload
-    | UploadResult
-    | Download
-    | DownloadResult
-    | Log
-    | LogResult
-    | Snapshot
-    | SnapshotResult
-    | SetRunningProjects
-    | SetRunningProjectsResult
-    | GetRunningProjects
-    | GetRunningProjectsResult;
-
-export interface Run extends BaseMessage {
-    cmd: Commands.Run;
-    data: { name: string };
+interface RunResultData {
+    readonly success: boolean;
+    readonly message: string;
 }
 
-export interface RunResult extends BaseMessage {
-    cmd: Commands.RunResult;
-    data: { success: boolean; message: string };
+interface StopData {
+    readonly name: string;
 }
 
-export interface Stop extends BaseMessage {
-    cmd: Commands.Stop;
-    data: { name: string };
+interface StopResultData {
+    readonly success: boolean;
+    readonly message: string;
 }
 
-export interface StopResult extends BaseMessage {
-    cmd: Commands.StopResult;
-    data: { success: boolean; message: string };
+interface DeleteData {
+    readonly path: string;
 }
 
-export interface Delete extends BaseMessage {
-    cmd: Commands.Delete;
-    data: { path: string };
+interface DeleteResultData {
+    readonly success: boolean;
+    readonly message: string;
 }
 
-export interface DeleteResult extends BaseMessage {
-    cmd: Commands.DeleteResult;
-    data: { success: boolean; message: string };
+interface UploadData {
+    readonly path: string;
+    readonly file: Uint8Array;
 }
 
-export interface Upload extends BaseMessage {
-    cmd: Commands.Upload;
-    data: { path: string; file: Uint8Array };
+interface UploadResultData {
+    readonly success: boolean;
+    readonly message: string;
 }
 
-export interface UploadResult extends BaseMessage {
-    cmd: Commands.UploadResult;
-    data: { success: boolean; message: string };
+interface DownloadData {
+    readonly path: string;
 }
 
-export interface Download extends BaseMessage {
-    cmd: Commands.Download;
-    data: { path: string };
+interface DownloadResultData {
+    readonly success: boolean;
+    readonly message: string;
+    readonly file: Uint8Array;
 }
 
-export interface DownloadResult extends BaseMessage {
-    cmd: Commands.DownloadResult;
-    data: { success: boolean; message: string; file: Uint8Array };
+interface LogData {
+    readonly level: LogLevel;
+    readonly message: string;
 }
 
-export interface Log extends BaseMessage {
-    cmd: Commands.Log;
-    data: { level: LogLevel; message: string };
+interface LogResultData {
+    readonly success: boolean;
+    readonly message: string;
 }
 
-export interface LogResult extends BaseMessage {
-    cmd: Commands.LogResult;
-    data: { success: boolean; message: string };
+interface SnapshotData {}
+
+interface SnapshotResultData {
+    readonly success: boolean;
+    readonly message: string;
+    readonly file: Uint8Array;
 }
 
-export interface Snapshot extends BaseMessage {
-    cmd: Commands.Snapshot;
-    data: {};
+interface SetRunningProjectsData {
+    readonly projects: string[];
 }
 
-export interface SnapshotResult extends BaseMessage {
-    cmd: Commands.SnapshotResult;
-    data: { success: boolean; message: string; file: Uint8Array };
+interface SetRunningProjectsResultData {
+    readonly success: boolean;
+    readonly message: string;
 }
 
-export interface SetRunningProjects extends BaseMessage {
-    cmd: Commands.SetRunningProjects;
-    data: { projects: string[] };
+interface GetRunningProjectsData {}
+
+interface GetRunningProjectsResultData {
+    readonly success: boolean;
+    readonly message: string;
+    readonly projects: string[];
 }
 
-export interface SetRunningProjectsResult extends BaseMessage {
-    cmd: Commands.SetRunningProjectsResult;
-    data: { success: boolean; message: string };
+interface WsMessage {
+    readonly id: string;
+    readonly data: WsMessageData;
 }
 
-export interface GetRunningProjects extends BaseMessage {
-    cmd: Commands.GetRunningProjects;
-    data: {};
+export class Run implements WsMessage {
+    constructor(
+        public id: string,
+        public data: RunData,
+    ) {}
 }
 
-export interface GetRunningProjectsResult extends BaseMessage {
-    cmd: Commands.GetRunningProjectsResult;
-    data: { success: boolean; message: string; projects: string[] };
+export class RunResult implements WsMessage {
+    constructor(
+        public id: string,
+        public data: RunResultData,
+    ) {}
+}
+
+export class Stop implements WsMessage {
+    constructor(
+        public id: string,
+        public data: StopData,
+    ) {}
+}
+
+export class StopResult implements WsMessage {
+    constructor(
+        public id: string,
+        public data: StopResultData,
+    ) {}
+}
+
+export class Delete implements WsMessage {
+    constructor(
+        public id: string,
+        public data: DeleteData,
+    ) {}
+}
+
+export class DeleteResult implements WsMessage {
+    constructor(
+        public id: string,
+        public data: DeleteResultData,
+    ) {}
+}
+
+export class Upload implements WsMessage {
+    constructor(
+        public id: string,
+        public data: UploadData,
+    ) {}
+}
+
+export class UploadResult implements WsMessage {
+    constructor(
+        public id: string,
+        public data: UploadResultData,
+    ) {}
+}
+
+export class Download implements WsMessage {
+    constructor(
+        public id: string,
+        public data: DownloadData,
+    ) {}
+}
+
+export class DownloadResult implements WsMessage {
+    constructor(
+        public id: string,
+        public data: DownloadResultData,
+    ) {}
+}
+
+export class Log implements WsMessage {
+    constructor(
+        public id: string,
+        public data: LogData,
+    ) {}
+}
+
+export class LogResult implements WsMessage {
+    constructor(
+        public id: string,
+        public data: LogResultData,
+    ) {}
+}
+
+export class Snapshot implements WsMessage {
+    constructor(
+        public id: string,
+        public data: SnapshotData,
+    ) {}
+}
+
+export class SnapshotResult implements WsMessage {
+    constructor(
+        public id: string,
+        public data: SnapshotResultData,
+    ) {}
+}
+
+export class SetRunningProjects implements WsMessage {
+    constructor(
+        public id: string,
+        public data: SetRunningProjectsData,
+    ) {}
+}
+
+export class SetRunningProjectsResult implements WsMessage {
+    constructor(
+        public id: string,
+        public data: SetRunningProjectsResultData,
+    ) {}
+}
+
+export class GetRunningProjects implements WsMessage {
+    constructor(
+        public id: string,
+        public data: GetRunningProjectsData,
+    ) {}
+}
+
+export class GetRunningProjectsResult implements WsMessage {
+    constructor(
+        public id: string,
+        public data: GetRunningProjectsResultData,
+    ) {}
 }
 
 export default class WsClient {
-    private readonly deferreds: Map<string, (value: Message) => void>;
+    private readonly deferreds: Map<string, (value: WsMessage) => void>;
 
     constructor() {
         this.deferreds = new Map();
     }
 
-    encode(data: Message): Uint8Array {
-        return cbor2encode(data);
+    encode(data: WsMessage): Uint8Array {
+        console.log('encode:', data);
+
+        let raw: RawWsMessage | undefined = undefined;
+        switch (true) {
+            case data instanceof Run:
+                break;
+            case data instanceof Run:
+                raw = [WsMessageCmd.Run, data];
+                break;
+            case data instanceof RunResult:
+                raw = [WsMessageCmd.RunResult, data];
+                break;
+            case data instanceof Stop:
+                raw = [WsMessageCmd.Stop, data];
+                break;
+            case data instanceof StopResult:
+                raw = [WsMessageCmd.StopResult, data];
+                break;
+            case data instanceof Delete:
+                raw = [WsMessageCmd.Delete, data];
+                break;
+            case data instanceof DeleteResult:
+                raw = [WsMessageCmd.DeleteResult, data];
+                break;
+            case data instanceof Upload:
+                raw = [WsMessageCmd.Upload, data];
+                break;
+            case data instanceof UploadResult:
+                raw = [WsMessageCmd.UploadResult, data];
+                break;
+            case data instanceof Download:
+                raw = [WsMessageCmd.Download, data];
+                break;
+            case data instanceof DownloadResult:
+                raw = [WsMessageCmd.DownloadResult, data];
+                break;
+            case data instanceof Log:
+                raw = [WsMessageCmd.Log, data];
+                break;
+            case data instanceof LogResult:
+                raw = [WsMessageCmd.LogResult, data];
+                break;
+            case data instanceof Snapshot:
+                raw = [WsMessageCmd.Snapshot, data];
+                break;
+            case data instanceof SnapshotResult:
+                raw = [WsMessageCmd.SnapshotResult, data];
+                break;
+            case data instanceof SetRunningProjects:
+                raw = [WsMessageCmd.SetRunningProjects, data];
+                break;
+            case data instanceof SetRunningProjectsResult:
+                raw = [WsMessageCmd.SetRunningProjectsResult, data];
+                break;
+            case data instanceof GetRunningProjects:
+                raw = [WsMessageCmd.GetRunningProjects, data];
+                break;
+            case data instanceof GetRunningProjectsResult:
+                raw = [WsMessageCmd.GetRunningProjectsResult, data];
+                break;
+        }
+        if (raw === undefined) {
+            throw Error(`未知类型: ${data}`);
+        }
+        const message = cbor2encode(raw);
+
+        console.log(
+            'encoded:',
+            [...message]
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join(' ')
+                .toUpperCase(),
+        );
+
+        return message;
     }
 
-    decode(data: Uint8Array): Message {
-        return cbor2decode<Message>(data);
+    decode(data: Uint8Array): WsMessage {
+        const raw = cbor2decode<RawWsMessage>(data);
+
+        console.log('decode:', raw);
+        let message: WsMessage | undefined = undefined;
+        switch (raw[0]) {
+            case WsMessageCmd.Run:
+                message = new Run(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.RunResult:
+                message = new RunResult(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.Stop:
+                message = new Stop(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.StopResult:
+                message = new StopResult(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.Delete:
+                message = new Delete(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.DeleteResult:
+                message = new DeleteResult(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.Upload:
+                message = new Upload(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.UploadResult:
+                message = new UploadResult(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.Download:
+                message = new Download(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.DownloadResult:
+                message = new DownloadResult(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.Log:
+                message = new Log(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.LogResult:
+                message = new LogResult(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.Snapshot:
+                message = new Snapshot(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.SnapshotResult:
+                message = new SnapshotResult(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.SetRunningProjects:
+                message = new SetRunningProjects(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.SetRunningProjectsResult:
+                message = new SetRunningProjectsResult(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.GetRunningProjects:
+                message = new GetRunningProjects(raw[1].id, raw[1].data);
+                break;
+            case WsMessageCmd.GetRunningProjectsResult:
+                message = new GetRunningProjectsResult(raw[1].id, raw[1].data);
+                break;
+        }
+        if (message === undefined) {
+            throw Error(`未知类型: ${raw}`);
+        }
+        return message;
     }
 
-    resolveResult(message: Message) {
+    resolveResult(message: WsMessage) {
         const resolve = this.deferreds.get(message.id);
         if (resolve === undefined) {
             throw new Error(`未就绪的请求消息: ${message.id}`);
@@ -168,11 +442,11 @@ export default class WsClient {
         resolve(message);
     }
 
-    async send(conn: WebSocket, message: Message): Promise<void> {
+    async send(conn: WebSocket, message: WsMessage): Promise<void> {
         const messageBytes = this.encode(message);
         await new Promise<void>((resolve, reject) => {
             conn.send(messageBytes, e => {
-                if (e === undefined) {
+                if (e === undefined || e === null) {
                     resolve();
                 } else {
                     reject(e);
@@ -181,8 +455,8 @@ export default class WsClient {
         });
     }
 
-    private async waitForResult(id: string): Promise<Message> {
-        return await new Promise<Message>((resolve, _) => {
+    private async waitForResult(id: string): Promise<WsMessage> {
+        return await new Promise<WsMessage>((resolve, _) => {
             this.deferreds.set(id, resolve);
         });
     }
@@ -191,8 +465,8 @@ export default class WsClient {
         const deferred = this.waitForResult(message.id);
         await this.send(conn, message);
         const runResult = await deferred;
-        if (runResult.cmd !== Commands.RunResult) {
-            throw Error(`错误的结果: 期望 ${Commands.RunResult} 实际 ${runResult.cmd}`);
+        if (runResult instanceof RunResult !== true) {
+            throw Error(`错误的结果: 期望 ${WsMessageCmd.RunResult} 实际 ${runResult}`);
         }
         if (runResult.data.success !== true) {
             throw Error(runResult.data.message);
@@ -203,8 +477,8 @@ export default class WsClient {
         const deferred = this.waitForResult(message.id);
         await this.send(conn, message);
         const stopResult = await deferred;
-        if (stopResult.cmd !== Commands.StopResult) {
-            throw Error(`错误的结果: 期望 ${Commands.StopResult} 实际 ${stopResult.cmd}`);
+        if (stopResult instanceof StopResult !== true) {
+            throw Error(`错误的结果: 期望 ${WsMessageCmd.StopResult} 实际 ${stopResult}`);
         }
         if (stopResult.data.success !== true) {
             throw Error(stopResult.data.message);
@@ -215,8 +489,8 @@ export default class WsClient {
         const deferred = this.waitForResult(message.id);
         await this.send(conn, message);
         const deleteResult = await deferred;
-        if (deleteResult.cmd !== Commands.DeleteResult) {
-            throw Error(`错误的结果: 期望 ${Commands.DeleteResult} 实际 ${deleteResult.cmd}`);
+        if (deleteResult instanceof DeleteResult !== true) {
+            throw Error(`错误的结果: 期望 ${WsMessageCmd.DeleteResult} 实际 ${deleteResult}`);
         }
         if (deleteResult.data.success !== true) {
             throw Error(deleteResult.data.message);
@@ -227,8 +501,8 @@ export default class WsClient {
         const deferred = this.waitForResult(message.id);
         await this.send(conn, message);
         const uploadResult = await deferred;
-        if (uploadResult.cmd !== Commands.UploadResult) {
-            throw Error(`错误的结果: 期望 ${Commands.UploadResult} 实际 ${uploadResult.cmd}`);
+        if (uploadResult instanceof UploadResult !== true) {
+            throw Error(`错误的结果: 期望 ${WsMessageCmd.UploadResult} 实际 ${uploadResult}`);
         }
         if (uploadResult.data.success !== true) {
             throw Error(uploadResult.data.message);
@@ -239,8 +513,8 @@ export default class WsClient {
         const deferred = this.waitForResult(message.id);
         await this.send(conn, message);
         const downloadResult = await deferred;
-        if (downloadResult.cmd !== Commands.DownloadResult) {
-            throw Error(`错误的结果: 期望 ${Commands.DownloadResult} 实际 ${downloadResult.cmd}`);
+        if (downloadResult instanceof DownloadResult !== true) {
+            throw Error(`错误的结果: 期望 ${WsMessageCmd.DownloadResult} 实际 ${downloadResult}`);
         }
         if (downloadResult.data.success !== true) {
             throw Error(downloadResult.data.message);
@@ -256,8 +530,8 @@ export default class WsClient {
         const deferred = this.waitForResult(message.id);
         await this.send(conn, message);
         const snapshotResult = await deferred;
-        if (snapshotResult.cmd !== Commands.SnapshotResult) {
-            throw Error(`错误的结果: 期望 ${Commands.SnapshotResult} 实际 ${snapshotResult.cmd}`);
+        if (snapshotResult instanceof SnapshotResult !== true) {
+            throw Error(`错误的结果: 期望 ${WsMessageCmd.SnapshotResult} 实际 ${snapshotResult}`);
         }
         if (snapshotResult.data.success !== true) {
             throw Error(snapshotResult.data.message);
@@ -269,8 +543,8 @@ export default class WsClient {
         const deferred = this.waitForResult(message.id);
         await this.send(conn, message);
         const getRunningProjectsResult = await deferred;
-        if (getRunningProjectsResult.cmd !== Commands.GetRunningProjectsResult) {
-            throw Error(`错误的结果: 期望 ${Commands.GetRunningProjectsResult} 实际 ${getRunningProjectsResult.cmd}`);
+        if (getRunningProjectsResult instanceof GetRunningProjectsResult !== true) {
+            throw Error(`错误的结果: 期望 ${WsMessageCmd.GetRunningProjectsResult} 实际 ${getRunningProjectsResult}`);
         }
         if (getRunningProjectsResult.data.success !== true) {
             throw Error(getRunningProjectsResult.data.message);

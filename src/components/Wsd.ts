@@ -8,7 +8,6 @@ import Workspace from './Workspace';
 import StatusBar, { StatusItem } from './StatusBar';
 import Storage from './Storage';
 import WsClient, {
-    Commands,
     LogLevel,
     GetRunningProjects,
     Stop,
@@ -22,6 +21,12 @@ import WsClient, {
     DownloadResult,
     SetRunningProjectsResult,
     SetRunningProjects,
+    RunResult,
+    StopResult,
+    DeleteResult,
+    LogResult,
+    SnapshotResult,
+    GetRunningProjectsResult,
 } from './WsClient';
 
 export default class Wsd {
@@ -147,45 +152,45 @@ export default class Wsd {
     private handleMessage(conn: WebSocket, data: Uint8Array) {
         try {
             const message = this.wsClient.decode(data);
-            switch (message.cmd) {
-                case Commands.RunResult:
+            switch (true) {
+                case message instanceof RunResult:
                     this.wsClient.resolveResult(message);
                     break;
-                case Commands.StopResult:
+                case message instanceof StopResult:
                     this.wsClient.resolveResult(message);
                     break;
-                case Commands.DeleteResult:
+                case message instanceof DeleteResult:
                     this.wsClient.resolveResult(message);
                     break;
-                case Commands.Upload:
+                case message instanceof Upload:
                     this.handleUploadMessage(conn, message);
                     break;
-                case Commands.UploadResult:
+                case message instanceof UploadResult:
                     this.wsClient.resolveResult(message);
                     break;
-                case Commands.Download:
+                case message instanceof Download:
                     this.handleDownloadMessage(conn, message);
                     break;
-                case Commands.DownloadResult:
+                case message instanceof DownloadResult:
                     this.wsClient.resolveResult(message);
                     break;
-                case Commands.Log:
+                case message instanceof Log:
                     this.handleLogMessage(message);
                     break;
-                case Commands.LogResult:
+                case message instanceof LogResult:
                     this.wsClient.resolveResult(message);
                     break;
-                case Commands.SnapshotResult:
+                case message instanceof SnapshotResult:
                     this.wsClient.resolveResult(message);
                     break;
-                case Commands.SetRunningProjects:
+                case message instanceof SetRunningProjects:
                     this.handleSetRunningProjectsMessage(conn, message);
                     break;
-                case Commands.GetRunningProjectsResult:
+                case message instanceof GetRunningProjectsResult:
                     this.wsClient.resolveResult(message);
                     break;
                 default:
-                    throw new Error(`不支持的命令: ${message.cmd}`);
+                    throw new Error(`不支持的命令: ${message}`);
             }
         } catch (e) {
             Output.eprintln(e);
@@ -197,21 +202,13 @@ export default class Wsd {
             const path = message.data.path;
             const file = message.data.file;
             await writeFile(path, file);
-            const newMessage: UploadResult = {
-                id: message.id,
-                cmd: Commands.UploadResult,
-                data: { success: true, message: '' },
-            };
+            const newMessage = new UploadResult(message.id, { success: true, message: '' });
             await this.wsClient.send(conn, newMessage);
         } catch (e) {
-            const newMessage: UploadResult = {
-                id: message.id,
-                cmd: Commands.UploadResult,
-                data: {
-                    success: false,
-                    message: `${(e as Error).message} ${(e as Error).stack}`,
-                },
-            };
+            const newMessage = new UploadResult(message.id, {
+                success: false,
+                message: `${(e as Error).message} ${(e as Error).stack}`,
+            });
             try {
                 await this.wsClient.send(conn, newMessage);
             } catch (e2) {
@@ -224,22 +221,14 @@ export default class Wsd {
         try {
             const path = message.data.path;
             const file = await readFile(path);
-            const newMessage: DownloadResult = {
-                id: message.id,
-                cmd: Commands.DownloadResult,
-                data: { success: true, message: '', file: file as Uint8Array },
-            };
+            const newMessage = new DownloadResult(message.id, { success: true, message: '', file: file as Uint8Array });
             await this.wsClient.send(conn, newMessage);
         } catch (e) {
-            const newMessage: DownloadResult = {
-                id: message.id,
-                cmd: Commands.DownloadResult,
-                data: {
-                    success: false,
-                    message: `${(e as Error).message} ${(e as Error).stack}`,
-                    file: new Uint8Array(),
-                },
-            };
+            const newMessage = new DownloadResult(message.id, {
+                success: false,
+                message: `${(e as Error).message} ${(e as Error).stack}`,
+                file: new Uint8Array(),
+            });
             try {
                 await this.wsClient.send(conn, newMessage);
             } catch (e2) {
@@ -268,18 +257,13 @@ export default class Wsd {
     private async handleSetRunningProjectsMessage(conn: WebSocket, message: SetRunningProjects) {
         try {
             StatusBar.running(message.data.projects);
-            const newMessage: SetRunningProjectsResult = {
-                id: message.id,
-                cmd: Commands.SetRunningProjectsResult,
-                data: { success: true, message: '' },
-            };
+            const newMessage = new SetRunningProjectsResult(message.id, { success: true, message: '' });
             await this.wsClient.send(conn, newMessage);
         } catch (e) {
-            const newMessage: SetRunningProjectsResult = {
-                id: message.id,
-                cmd: Commands.SetRunningProjectsResult,
-                data: { success: false, message: `${(e as Error).message} ${(e as Error).stack}` },
-            };
+            const newMessage = new SetRunningProjectsResult(message.id, {
+                success: false,
+                message: `${(e as Error).message} ${(e as Error).stack}`,
+            });
             try {
                 await this.wsClient.send(conn, newMessage);
             } catch (e2) {
@@ -289,76 +273,44 @@ export default class Wsd {
     }
 
     private async run(conn: WebSocket, name: string): Promise<void> {
-        const message: Run = {
-            id: randomUUID(),
-            cmd: Commands.Run,
-            data: { name: name },
-        };
+        const message = new Run(randomUUID(), { name: name });
         await this.wsClient.run(conn, message);
     }
 
     private async stop(conn: WebSocket, name: string): Promise<void> {
-        const message: Stop = {
-            id: randomUUID(),
-            cmd: Commands.Stop,
-            data: { name: name },
-        };
+        const message = new Stop(randomUUID(), { name: name });
         await this.wsClient.stop(conn, message);
     }
 
     private async delete(conn: WebSocket, path: string): Promise<void> {
-        const message: Delete = {
-            id: randomUUID(),
-            cmd: Commands.Delete,
-            data: { path: path },
-        };
+        const message = new Delete(randomUUID(), { path: path });
         await this.wsClient.delete(conn, message);
     }
 
     private async upload(conn: WebSocket, path: string, file: Uint8Array): Promise<void> {
-        const message: Upload = {
-            id: randomUUID(),
-            cmd: Commands.Upload,
-            data: { path: path, file: file },
-        };
+        const message = new Upload(randomUUID(), { path: path, file: file });
         await this.wsClient.upload(conn, message);
     }
 
     private async download(conn: WebSocket, path: string): Promise<Uint8Array> {
-        const message: Download = {
-            id: randomUUID(),
-            cmd: Commands.Download,
-            data: { path: path },
-        };
+        const message = new Download(randomUUID(), { path: path });
         const file = await this.wsClient.download(conn, message);
         return file;
     }
 
     private async log(conn: WebSocket, level: LogLevel, message: string): Promise<void> {
-        const logMessage: Log = {
-            id: randomUUID(),
-            cmd: Commands.Log,
-            data: { level: level, message: message },
-        };
+        const logMessage = new Log(randomUUID(), { level: level, message: message });
         await this.wsClient.log(conn, logMessage);
     }
 
     private async snapshot(conn: WebSocket): Promise<Uint8Array> {
-        const message: Snapshot = {
-            id: randomUUID(),
-            cmd: Commands.Snapshot,
-            data: {},
-        };
+        const message = new Snapshot(randomUUID(), {});
         const file = await this.wsClient.snapshot(conn, message);
         return file;
     }
 
     private async getRunningProjects(conn: WebSocket): Promise<string[]> {
-        const message: GetRunningProjects = {
-            id: randomUUID(),
-            cmd: Commands.GetRunningProjects,
-            data: {},
-        };
+        const message = new GetRunningProjects(randomUUID(), {});
         const projects = await this.wsClient.getRunningProjects(conn, message);
         return projects;
     }
