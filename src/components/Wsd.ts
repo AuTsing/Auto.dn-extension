@@ -18,6 +18,10 @@ import WsClient, {
     Download,
     Log,
     Snapshot,
+    UploadResult,
+    DownloadResult,
+    SetRunningProjectsResult,
+    SetRunningProjects,
 } from './WsClient';
 
 export default class Wsd {
@@ -62,7 +66,7 @@ export default class Wsd {
                 }
             });
             wsc.on('message', message => {
-                this.wsClient.handleMessage(wsc, message as Uint8Array);
+                this.handleMessage(wsc, message as Uint8Array);
             });
         });
         return conn;
@@ -137,6 +141,150 @@ export default class Wsd {
             this.disconnect();
         } catch (e) {
             Output.eprintln('断开设备失败:', e);
+        }
+    }
+
+    private handleMessage(conn: WebSocket, data: Uint8Array) {
+        try {
+            const message = this.wsClient.decode(data);
+            switch (message.cmd) {
+                case Commands.RunResult:
+                    this.wsClient.resolveResult(message);
+                    break;
+                case Commands.StopResult:
+                    this.wsClient.resolveResult(message);
+                    break;
+                case Commands.DeleteResult:
+                    this.wsClient.resolveResult(message);
+                    break;
+                case Commands.Upload:
+                    this.handleUploadMessage(conn, message);
+                    break;
+                case Commands.UploadResult:
+                    this.wsClient.resolveResult(message);
+                    break;
+                case Commands.Download:
+                    this.handleDownloadMessage(conn, message);
+                    break;
+                case Commands.DownloadResult:
+                    this.wsClient.resolveResult(message);
+                    break;
+                case Commands.Log:
+                    this.handleLogMessage(message);
+                    break;
+                case Commands.LogResult:
+                    this.wsClient.resolveResult(message);
+                    break;
+                case Commands.SnapshotResult:
+                    this.wsClient.resolveResult(message);
+                    break;
+                case Commands.SetRunningProjects:
+                    this.handleSetRunningProjectsMessage(conn, message);
+                    break;
+                case Commands.GetRunningProjectsResult:
+                    this.wsClient.resolveResult(message);
+                    break;
+                default:
+                    throw new Error(`不支持的命令: ${message.cmd}`);
+            }
+        } catch (e) {
+            Output.eprintln(e);
+        }
+    }
+
+    private async handleUploadMessage(conn: WebSocket, message: Upload) {
+        try {
+            const path = message.data.path;
+            const file = message.data.file;
+            await writeFile(path, file);
+            const newMessage: UploadResult = {
+                id: message.id,
+                cmd: Commands.UploadResult,
+                data: { success: true, message: '' },
+            };
+            await this.wsClient.send(conn, newMessage);
+        } catch (e) {
+            const newMessage: UploadResult = {
+                id: message.id,
+                cmd: Commands.UploadResult,
+                data: {
+                    success: false,
+                    message: `${(e as Error).message} ${(e as Error).stack}`,
+                },
+            };
+            try {
+                await this.wsClient.send(conn, newMessage);
+            } catch (e2) {
+                Output.eprintln(e2);
+            }
+        }
+    }
+
+    private async handleDownloadMessage(conn: WebSocket, message: Download) {
+        try {
+            const path = message.data.path;
+            const file = await readFile(path);
+            const newMessage: DownloadResult = {
+                id: message.id,
+                cmd: Commands.DownloadResult,
+                data: { success: true, message: '', file: file as Uint8Array },
+            };
+            await this.wsClient.send(conn, newMessage);
+        } catch (e) {
+            const newMessage: DownloadResult = {
+                id: message.id,
+                cmd: Commands.DownloadResult,
+                data: {
+                    success: false,
+                    message: `${(e as Error).message} ${(e as Error).stack}`,
+                    file: new Uint8Array(),
+                },
+            };
+            try {
+                await this.wsClient.send(conn, newMessage);
+            } catch (e2) {
+                Output.eprintln(e2);
+            }
+        }
+    }
+
+    private handleLogMessage(message: Log) {
+        switch (message.data.level) {
+            case LogLevel.Info:
+                Output.println(message.data.message);
+                break;
+            case LogLevel.Warn:
+                Output.wprintln(message.data.message);
+                break;
+            case LogLevel.Error:
+                Output.eprintln(message.data.message);
+                break;
+            default:
+                Output.println(message.data.message);
+                break;
+        }
+    }
+
+    private async handleSetRunningProjectsMessage(conn: WebSocket, message: SetRunningProjects) {
+        try {
+            StatusBar.running(message.data.projects);
+            const newMessage: SetRunningProjectsResult = {
+                id: message.id,
+                cmd: Commands.SetRunningProjectsResult,
+                data: { success: true, message: '' },
+            };
+            await this.wsClient.send(conn, newMessage);
+        } catch (e) {
+            const newMessage: SetRunningProjectsResult = {
+                id: message.id,
+                cmd: Commands.SetRunningProjectsResult,
+                data: { success: false, message: `${(e as Error).message} ${(e as Error).stack}` },
+            };
+            try {
+                await this.wsClient.send(conn, newMessage);
+            } catch (e2) {
+                Output.eprintln(e2);
+            }
         }
     }
 
