@@ -379,7 +379,7 @@ export class GetRunningProjectsResult extends WsMessage {
 
 export default class WsClient {
     static {
-        registerEncoder(Buffer, b => [NaN, [...b]]);
+        registerEncoder(Buffer, b => [NaN, new Uint8Array(b.buffer, b.byteOffset, b.byteLength)]);
     }
 
     private readonly deferreds: Map<string, (value: WsMessage) => void>;
@@ -389,17 +389,7 @@ export default class WsClient {
     }
 
     encode(data: WsMessage): Uint8Array {
-        console.log('encode:', data);
-        const message = cbor2encode(data);
-        console.log(
-            'encoded:',
-            [...message]
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join(' ')
-                .toUpperCase(),
-        );
-
-        return message;
+        return cbor2encode(data);
     }
 
     decode(data: Uint8Array): WsMessage {
