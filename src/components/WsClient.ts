@@ -29,26 +29,6 @@ export enum LogLevel {
     Error = 'Error',
 }
 
-type RawWsMessage =
-    | [WsMessageCmd.Run, Run]
-    | [WsMessageCmd.RunResult, RunResult]
-    | [WsMessageCmd.Stop, Stop]
-    | [WsMessageCmd.StopResult, StopResult]
-    | [WsMessageCmd.Delete, Delete]
-    | [WsMessageCmd.DeleteResult, DeleteResult]
-    | [WsMessageCmd.Upload, Upload]
-    | [WsMessageCmd.UploadResult, UploadResult]
-    | [WsMessageCmd.Download, Download]
-    | [WsMessageCmd.DownloadResult, DownloadResult]
-    | [WsMessageCmd.Log, Log]
-    | [WsMessageCmd.LogResult, LogResult]
-    | [WsMessageCmd.Snapshot, Snapshot]
-    | [WsMessageCmd.SnapshotResult, SnapshotResult]
-    | [WsMessageCmd.SetRunningProjects, SetRunningProjects]
-    | [WsMessageCmd.SetRunningProjectsResult, SetRunningProjectsResult]
-    | [WsMessageCmd.GetRunningProjects, GetRunningProjects]
-    | [WsMessageCmd.GetRunningProjectsResult, GetRunningProjectsResult];
-
 type WsMessageData =
     | RunData
     | RunResultData
@@ -151,235 +131,325 @@ interface GetRunningProjectsResultData {
     readonly projects: string[];
 }
 
-abstract class WsMessage {
-    abstract readonly id: string;
-    abstract readonly data: WsMessageData;
-    abstract readonly cmd: WsMessageCmd;
+type Cbor =
+    | [WsMessageCmd.Run, Run]
+    | [WsMessageCmd.RunResult, RunResult]
+    | [WsMessageCmd.Stop, Stop]
+    | [WsMessageCmd.StopResult, StopResult]
+    | [WsMessageCmd.Delete, Delete]
+    | [WsMessageCmd.DeleteResult, DeleteResult]
+    | [WsMessageCmd.Upload, Upload]
+    | [WsMessageCmd.UploadResult, UploadResult]
+    | [WsMessageCmd.Download, Download]
+    | [WsMessageCmd.DownloadResult, DownloadResult]
+    | [WsMessageCmd.Log, Log]
+    | [WsMessageCmd.LogResult, LogResult]
+    | [WsMessageCmd.Snapshot, Snapshot]
+    | [WsMessageCmd.SnapshotResult, SnapshotResult]
+    | [WsMessageCmd.SetRunningProjects, SetRunningProjects]
+    | [WsMessageCmd.SetRunningProjectsResult, SetRunningProjectsResult]
+    | [WsMessageCmd.GetRunningProjects, GetRunningProjects]
+    | [WsMessageCmd.GetRunningProjectsResult, GetRunningProjectsResult];
 
-    toCBOR() {
-        return [NaN, [this.cmd, new Map(Object.entries(this))]];
-    }
+type TaggedCbor = [number, [Cbor[0], Map<string, any>]];
+
+interface WsMessage {
+    readonly id: string;
+    readonly data: WsMessageData;
+    toCBOR(): TaggedCbor;
 }
 
-export class Run extends WsMessage {
+export class Run implements WsMessage {
+    static readonly cmd: WsMessageCmd.Run = WsMessageCmd.Run;
+
     readonly id: string;
     readonly data: RunData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.Run;
 
     constructor(id: string, data: RunData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [Run.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class RunResult extends WsMessage {
+export class RunResult implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.RunResult;
+
     readonly id: string;
     readonly data: RunResultData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.RunResult;
 
     constructor(id: string, data: RunResultData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [RunResult.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class Stop extends WsMessage {
+export class Stop implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.Stop;
+
     readonly id: string;
     readonly data: StopData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.Stop;
 
     constructor(id: string, data: StopData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [Stop.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class StopResult extends WsMessage {
+export class StopResult implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.StopResult;
+
     readonly id: string;
     readonly data: StopResultData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.StopResult;
 
     constructor(id: string, data: StopResultData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [StopResult.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class Delete extends WsMessage {
+export class Delete implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.Delete;
+
     readonly id: string;
     readonly data: DeleteData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.Delete;
 
     constructor(id: string, data: DeleteData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [Delete.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class DeleteResult extends WsMessage {
+export class DeleteResult implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.DeleteResult;
+
     readonly id: string;
     readonly data: DeleteResultData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.DeleteResult;
 
     constructor(id: string, data: DeleteResultData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [DeleteResult.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class Upload extends WsMessage {
+export class Upload implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.Upload;
+
     readonly id: string;
     readonly data: UploadData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.Upload;
 
     constructor(id: string, data: UploadData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [Upload.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class UploadResult extends WsMessage {
+export class UploadResult implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.UploadResult;
+
     readonly id: string;
     readonly data: UploadResultData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.UploadResult;
 
     constructor(id: string, data: UploadResultData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [UploadResult.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class Download extends WsMessage {
+export class Download implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.Download;
+
     readonly id: string;
     readonly data: DownloadData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.Upload;
 
     constructor(id: string, data: DownloadData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [Download.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class DownloadResult extends WsMessage {
+export class DownloadResult implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.DownloadResult;
+
     readonly id: string;
     readonly data: DownloadResultData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.DownloadResult;
 
     constructor(id: string, data: DownloadResultData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [DownloadResult.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class Log extends WsMessage {
+export class Log implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.Log;
+
     readonly id: string;
     readonly data: LogData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.Log;
 
     constructor(id: string, data: LogData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [Log.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class LogResult extends WsMessage {
+export class LogResult implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.LogResult;
+
     readonly id: string;
     readonly data: LogResultData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.LogResult;
 
     constructor(id: string, data: LogResultData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [LogResult.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class Snapshot extends WsMessage {
+export class Snapshot implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.Snapshot;
+
     readonly id: string;
     readonly data: SnapshotData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.Snapshot;
 
     constructor(id: string, data: SnapshotData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [Snapshot.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class SnapshotResult extends WsMessage {
+export class SnapshotResult implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.SnapshotResult;
+
     readonly id: string;
     readonly data: SnapshotResultData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.SnapshotResult;
 
     constructor(id: string, data: SnapshotResultData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [SnapshotResult.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class SetRunningProjects extends WsMessage {
+export class SetRunningProjects implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.SetRunningProjects;
+
     readonly id: string;
     readonly data: SetRunningProjectsData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.SetRunningProjects;
 
     constructor(id: string, data: SetRunningProjectsData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [SetRunningProjects.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class SetRunningProjectsResult extends WsMessage {
+export class SetRunningProjectsResult implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.SetRunningProjectsResult;
+
     readonly id: string;
     readonly data: SetRunningProjectsResultData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.SetRunningProjectsResult;
 
     constructor(id: string, data: SetRunningProjectsResultData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [SetRunningProjectsResult.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class GetRunningProjects extends WsMessage {
+export class GetRunningProjects implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.GetRunningProjects;
+
     readonly id: string;
     readonly data: GetRunningProjectsData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.GetRunningProjects;
 
     constructor(id: string, data: GetRunningProjectsData) {
-        super();
         this.id = id;
         this.data = data;
     }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [GetRunningProjects.cmd, new Map(Object.entries(this))]];
+    }
 }
 
-export class GetRunningProjectsResult extends WsMessage {
+export class GetRunningProjectsResult implements WsMessage {
+    static readonly cmd: WsMessageCmd = WsMessageCmd.GetRunningProjectsResult;
+
     readonly id: string;
     readonly data: GetRunningProjectsResultData;
-    readonly cmd: WsMessageCmd = WsMessageCmd.GetRunningProjectsResult;
 
     constructor(id: string, data: GetRunningProjectsResultData) {
-        super();
         this.id = id;
         this.data = data;
+    }
+
+    toCBOR(): TaggedCbor {
+        return [NaN, [GetRunningProjectsResult.cmd, new Map(Object.entries(this))]];
     }
 }
 
 export default class WsClient {
     static {
-        registerEncoder(Buffer, b => [NaN, new Uint8Array(b.buffer, b.byteOffset, b.byteLength)]);
+        registerEncoder(Buffer, it => [NaN, new Uint8Array(it.buffer, it.byteOffset, it.byteLength)]);
     }
 
     private readonly deferreds: Map<string, (value: WsMessage) => void>;
@@ -389,72 +459,70 @@ export default class WsClient {
     }
 
     encode(data: WsMessage): Uint8Array {
-        return cbor2encode(data);
+        const message = cbor2encode(data);
+        return message;
     }
 
     decode(data: Uint8Array): WsMessage {
-        const raw = cbor2decode<RawWsMessage>(data);
-
-        console.log('decode:', raw);
-        let message: WsMessage | undefined = undefined;
-        switch (raw[0]) {
+        const cbor = cbor2decode<Cbor>(data);
+        let message: WsMessage;
+        switch (cbor[0]) {
             case WsMessageCmd.Run:
-                message = new Run(raw[1].id, raw[1].data);
+                message = new Run(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.RunResult:
-                message = new RunResult(raw[1].id, raw[1].data);
+                message = new RunResult(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.Stop:
-                message = new Stop(raw[1].id, raw[1].data);
+                message = new Stop(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.StopResult:
-                message = new StopResult(raw[1].id, raw[1].data);
+                message = new StopResult(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.Delete:
-                message = new Delete(raw[1].id, raw[1].data);
+                message = new Delete(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.DeleteResult:
-                message = new DeleteResult(raw[1].id, raw[1].data);
+                message = new DeleteResult(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.Upload:
-                message = new Upload(raw[1].id, raw[1].data);
+                message = new Upload(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.UploadResult:
-                message = new UploadResult(raw[1].id, raw[1].data);
+                message = new UploadResult(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.Download:
-                message = new Download(raw[1].id, raw[1].data);
+                message = new Download(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.DownloadResult:
-                message = new DownloadResult(raw[1].id, raw[1].data);
+                message = new DownloadResult(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.Log:
-                message = new Log(raw[1].id, raw[1].data);
+                message = new Log(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.LogResult:
-                message = new LogResult(raw[1].id, raw[1].data);
+                message = new LogResult(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.Snapshot:
-                message = new Snapshot(raw[1].id, raw[1].data);
+                message = new Snapshot(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.SnapshotResult:
-                message = new SnapshotResult(raw[1].id, raw[1].data);
+                message = new SnapshotResult(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.SetRunningProjects:
-                message = new SetRunningProjects(raw[1].id, raw[1].data);
+                message = new SetRunningProjects(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.SetRunningProjectsResult:
-                message = new SetRunningProjectsResult(raw[1].id, raw[1].data);
+                message = new SetRunningProjectsResult(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.GetRunningProjects:
-                message = new GetRunningProjects(raw[1].id, raw[1].data);
+                message = new GetRunningProjects(cbor[1].id, cbor[1].data);
                 break;
             case WsMessageCmd.GetRunningProjectsResult:
-                message = new GetRunningProjectsResult(raw[1].id, raw[1].data);
+                message = new GetRunningProjectsResult(cbor[1].id, cbor[1].data);
                 break;
-        }
-        if (message === undefined) {
-            throw Error(`未知类型: ${raw}`);
+            default:
+                throw Error(`未知类型: ${cbor}`);
         }
         return message;
     }
@@ -492,7 +560,7 @@ export default class WsClient {
         await this.send(conn, message);
         const runResult = await deferred;
         if (runResult instanceof RunResult !== true) {
-            throw Error(`错误的结果: 期望 ${WsMessageCmd.RunResult} 实际 ${runResult}`);
+            throw Error(`错误的结果: 期望 RunResult 实际 ${runResult}`);
         }
         if (runResult.data.success !== true) {
             throw Error(runResult.data.message);
@@ -504,7 +572,7 @@ export default class WsClient {
         await this.send(conn, message);
         const stopResult = await deferred;
         if (stopResult instanceof StopResult !== true) {
-            throw Error(`错误的结果: 期望 ${WsMessageCmd.StopResult} 实际 ${stopResult}`);
+            throw Error(`错误的结果: 期望 StopResult 实际 ${stopResult}`);
         }
         if (stopResult.data.success !== true) {
             throw Error(stopResult.data.message);
@@ -516,7 +584,7 @@ export default class WsClient {
         await this.send(conn, message);
         const deleteResult = await deferred;
         if (deleteResult instanceof DeleteResult !== true) {
-            throw Error(`错误的结果: 期望 ${WsMessageCmd.DeleteResult} 实际 ${deleteResult}`);
+            throw Error(`错误的结果: 期望 DeleteResult 实际 ${deleteResult}`);
         }
         if (deleteResult.data.success !== true) {
             throw Error(deleteResult.data.message);
@@ -528,7 +596,7 @@ export default class WsClient {
         await this.send(conn, message);
         const uploadResult = await deferred;
         if (uploadResult instanceof UploadResult !== true) {
-            throw Error(`错误的结果: 期望 ${WsMessageCmd.UploadResult} 实际 ${uploadResult}`);
+            throw Error(`错误的结果: 期望 UploadResult 实际 ${uploadResult}`);
         }
         if (uploadResult.data.success !== true) {
             throw Error(uploadResult.data.message);
@@ -540,7 +608,7 @@ export default class WsClient {
         await this.send(conn, message);
         const downloadResult = await deferred;
         if (downloadResult instanceof DownloadResult !== true) {
-            throw Error(`错误的结果: 期望 ${WsMessageCmd.DownloadResult} 实际 ${downloadResult}`);
+            throw Error(`错误的结果: 期望 DownloadResult 实际 ${downloadResult}`);
         }
         if (downloadResult.data.success !== true) {
             throw Error(downloadResult.data.message);
@@ -557,7 +625,7 @@ export default class WsClient {
         await this.send(conn, message);
         const snapshotResult = await deferred;
         if (snapshotResult instanceof SnapshotResult !== true) {
-            throw Error(`错误的结果: 期望 ${WsMessageCmd.SnapshotResult} 实际 ${snapshotResult}`);
+            throw Error(`错误的结果: 期望 SnapshotResult 实际 ${snapshotResult}`);
         }
         if (snapshotResult.data.success !== true) {
             throw Error(snapshotResult.data.message);
@@ -570,7 +638,7 @@ export default class WsClient {
         await this.send(conn, message);
         const getRunningProjectsResult = await deferred;
         if (getRunningProjectsResult instanceof GetRunningProjectsResult !== true) {
-            throw Error(`错误的结果: 期望 ${WsMessageCmd.GetRunningProjectsResult} 实际 ${getRunningProjectsResult}`);
+            throw Error(`错误的结果: 期望 GetRunningProjectsResult 实际 ${getRunningProjectsResult}`);
         }
         if (getRunningProjectsResult.data.success !== true) {
             throw Error(getRunningProjectsResult.data.message);
