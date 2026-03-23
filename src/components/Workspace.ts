@@ -70,11 +70,11 @@ export default class Workspace {
         const localImportsAbsolutePaths = localImports.map(it => Path.resolve(workspaceFolder.uri.fsPath, it));
         for (const path of localImportsAbsolutePaths) {
             const name = Path.basename(path);
-            const files = await this.readdirRecursively(path, 'Projects/' + name);
+            const files = await this.readdirRecursively(path, `Projects/${name}`);
             workspaceFiles.push(...files);
         }
 
-        const files = await this.readdirRecursively(workspaceFolder.uri.fsPath, 'Projects/' + workspaceFolder.name);
+        const files = await this.readdirRecursively(workspaceFolder.uri.fsPath, `Projects/${workspaceFolder.name}`);
         workspaceFiles.push(...files);
 
         return workspaceFiles;

@@ -1,5 +1,6 @@
 import { WebSocket } from 'ws';
 import { decode as cbor2decode, encode as cbor2encode } from 'cbor2';
+import { registerEncoder } from 'cbor2/encoder';
 
 export enum WsMessageCmd {
     Run = 'Run',
@@ -23,9 +24,9 @@ export enum WsMessageCmd {
 }
 
 export enum LogLevel {
-    Info = 4,
-    Warn = 5,
-    Error = 6,
+    Info = 'Info',
+    Warn = 'Warn',
+    Error = 'Error',
 }
 
 type RawWsMessage =
@@ -150,138 +151,237 @@ interface GetRunningProjectsResultData {
     readonly projects: string[];
 }
 
-interface WsMessage {
+abstract class WsMessage {
+    abstract readonly id: string;
+    abstract readonly data: WsMessageData;
+    abstract readonly cmd: WsMessageCmd;
+
+    toCBOR() {
+        return [NaN, [this.cmd, new Map(Object.entries(this))]];
+    }
+}
+
+export class Run extends WsMessage {
     readonly id: string;
-    readonly data: WsMessageData;
+    readonly data: RunData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.Run;
+
+    constructor(id: string, data: RunData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class Run implements WsMessage {
-    constructor(
-        public id: string,
-        public data: RunData,
-    ) {}
+export class RunResult extends WsMessage {
+    readonly id: string;
+    readonly data: RunResultData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.RunResult;
+
+    constructor(id: string, data: RunResultData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class RunResult implements WsMessage {
-    constructor(
-        public id: string,
-        public data: RunResultData,
-    ) {}
+export class Stop extends WsMessage {
+    readonly id: string;
+    readonly data: StopData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.Stop;
+
+    constructor(id: string, data: StopData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class Stop implements WsMessage {
-    constructor(
-        public id: string,
-        public data: StopData,
-    ) {}
+export class StopResult extends WsMessage {
+    readonly id: string;
+    readonly data: StopResultData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.StopResult;
+
+    constructor(id: string, data: StopResultData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class StopResult implements WsMessage {
-    constructor(
-        public id: string,
-        public data: StopResultData,
-    ) {}
+export class Delete extends WsMessage {
+    readonly id: string;
+    readonly data: DeleteData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.Delete;
+
+    constructor(id: string, data: DeleteData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class Delete implements WsMessage {
-    constructor(
-        public id: string,
-        public data: DeleteData,
-    ) {}
+export class DeleteResult extends WsMessage {
+    readonly id: string;
+    readonly data: DeleteResultData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.DeleteResult;
+
+    constructor(id: string, data: DeleteResultData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class DeleteResult implements WsMessage {
-    constructor(
-        public id: string,
-        public data: DeleteResultData,
-    ) {}
+export class Upload extends WsMessage {
+    readonly id: string;
+    readonly data: UploadData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.Upload;
+
+    constructor(id: string, data: UploadData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class Upload implements WsMessage {
-    constructor(
-        public id: string,
-        public data: UploadData,
-    ) {}
+export class UploadResult extends WsMessage {
+    readonly id: string;
+    readonly data: UploadResultData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.UploadResult;
+
+    constructor(id: string, data: UploadResultData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class UploadResult implements WsMessage {
-    constructor(
-        public id: string,
-        public data: UploadResultData,
-    ) {}
+export class Download extends WsMessage {
+    readonly id: string;
+    readonly data: DownloadData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.Upload;
+
+    constructor(id: string, data: DownloadData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class Download implements WsMessage {
-    constructor(
-        public id: string,
-        public data: DownloadData,
-    ) {}
+export class DownloadResult extends WsMessage {
+    readonly id: string;
+    readonly data: DownloadResultData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.DownloadResult;
+
+    constructor(id: string, data: DownloadResultData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class DownloadResult implements WsMessage {
-    constructor(
-        public id: string,
-        public data: DownloadResultData,
-    ) {}
+export class Log extends WsMessage {
+    readonly id: string;
+    readonly data: LogData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.Log;
+
+    constructor(id: string, data: LogData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class Log implements WsMessage {
-    constructor(
-        public id: string,
-        public data: LogData,
-    ) {}
+export class LogResult extends WsMessage {
+    readonly id: string;
+    readonly data: LogResultData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.LogResult;
+
+    constructor(id: string, data: LogResultData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class LogResult implements WsMessage {
-    constructor(
-        public id: string,
-        public data: LogResultData,
-    ) {}
+export class Snapshot extends WsMessage {
+    readonly id: string;
+    readonly data: SnapshotData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.Snapshot;
+
+    constructor(id: string, data: SnapshotData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class Snapshot implements WsMessage {
-    constructor(
-        public id: string,
-        public data: SnapshotData,
-    ) {}
+export class SnapshotResult extends WsMessage {
+    readonly id: string;
+    readonly data: SnapshotResultData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.SnapshotResult;
+
+    constructor(id: string, data: SnapshotResultData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class SnapshotResult implements WsMessage {
-    constructor(
-        public id: string,
-        public data: SnapshotResultData,
-    ) {}
+export class SetRunningProjects extends WsMessage {
+    readonly id: string;
+    readonly data: SetRunningProjectsData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.SetRunningProjects;
+
+    constructor(id: string, data: SetRunningProjectsData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class SetRunningProjects implements WsMessage {
-    constructor(
-        public id: string,
-        public data: SetRunningProjectsData,
-    ) {}
+export class SetRunningProjectsResult extends WsMessage {
+    readonly id: string;
+    readonly data: SetRunningProjectsResultData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.SetRunningProjectsResult;
+
+    constructor(id: string, data: SetRunningProjectsResultData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class SetRunningProjectsResult implements WsMessage {
-    constructor(
-        public id: string,
-        public data: SetRunningProjectsResultData,
-    ) {}
+export class GetRunningProjects extends WsMessage {
+    readonly id: string;
+    readonly data: GetRunningProjectsData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.GetRunningProjects;
+
+    constructor(id: string, data: GetRunningProjectsData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
-export class GetRunningProjects implements WsMessage {
-    constructor(
-        public id: string,
-        public data: GetRunningProjectsData,
-    ) {}
-}
+export class GetRunningProjectsResult extends WsMessage {
+    readonly id: string;
+    readonly data: GetRunningProjectsResultData;
+    readonly cmd: WsMessageCmd = WsMessageCmd.GetRunningProjectsResult;
 
-export class GetRunningProjectsResult implements WsMessage {
-    constructor(
-        public id: string,
-        public data: GetRunningProjectsResultData,
-    ) {}
+    constructor(id: string, data: GetRunningProjectsResultData) {
+        super();
+        this.id = id;
+        this.data = data;
+    }
 }
 
 export default class WsClient {
+    static {
+        registerEncoder(Buffer, b => [NaN, [...b]]);
+    }
+
     private readonly deferreds: Map<string, (value: WsMessage) => void>;
 
     constructor() {
@@ -290,71 +390,7 @@ export default class WsClient {
 
     encode(data: WsMessage): Uint8Array {
         console.log('encode:', data);
-
-        let raw: RawWsMessage | undefined = undefined;
-        switch (true) {
-            case data instanceof Run:
-                break;
-            case data instanceof Run:
-                raw = [WsMessageCmd.Run, data];
-                break;
-            case data instanceof RunResult:
-                raw = [WsMessageCmd.RunResult, data];
-                break;
-            case data instanceof Stop:
-                raw = [WsMessageCmd.Stop, data];
-                break;
-            case data instanceof StopResult:
-                raw = [WsMessageCmd.StopResult, data];
-                break;
-            case data instanceof Delete:
-                raw = [WsMessageCmd.Delete, data];
-                break;
-            case data instanceof DeleteResult:
-                raw = [WsMessageCmd.DeleteResult, data];
-                break;
-            case data instanceof Upload:
-                raw = [WsMessageCmd.Upload, data];
-                break;
-            case data instanceof UploadResult:
-                raw = [WsMessageCmd.UploadResult, data];
-                break;
-            case data instanceof Download:
-                raw = [WsMessageCmd.Download, data];
-                break;
-            case data instanceof DownloadResult:
-                raw = [WsMessageCmd.DownloadResult, data];
-                break;
-            case data instanceof Log:
-                raw = [WsMessageCmd.Log, data];
-                break;
-            case data instanceof LogResult:
-                raw = [WsMessageCmd.LogResult, data];
-                break;
-            case data instanceof Snapshot:
-                raw = [WsMessageCmd.Snapshot, data];
-                break;
-            case data instanceof SnapshotResult:
-                raw = [WsMessageCmd.SnapshotResult, data];
-                break;
-            case data instanceof SetRunningProjects:
-                raw = [WsMessageCmd.SetRunningProjects, data];
-                break;
-            case data instanceof SetRunningProjectsResult:
-                raw = [WsMessageCmd.SetRunningProjectsResult, data];
-                break;
-            case data instanceof GetRunningProjects:
-                raw = [WsMessageCmd.GetRunningProjects, data];
-                break;
-            case data instanceof GetRunningProjectsResult:
-                raw = [WsMessageCmd.GetRunningProjectsResult, data];
-                break;
-        }
-        if (raw === undefined) {
-            throw Error(`未知类型: ${data}`);
-        }
-        const message = cbor2encode(raw);
-
+        const message = cbor2encode(data);
         console.log(
             'encoded:',
             [...message]

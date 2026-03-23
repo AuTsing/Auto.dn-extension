@@ -334,7 +334,7 @@ export default class Wsd {
             if (doingDelete !== undefined) {
                 doings.push(doingDelete);
             }
-            await this.delete(conn, name);
+            await this.delete(conn, `Projects/${name}`);
 
             const doingUpload = StatusBar.doing('上传工程中');
             if (doingUpload !== undefined) {
@@ -344,7 +344,6 @@ export default class Wsd {
             for (const workspaceFile of workspaceFiles) {
                 const file = await readFile(workspaceFile.absolutePath);
                 await this.upload(conn, workspaceFile.remotePath, file as Uint8Array);
-                // TODO(move remotePath to relativePath)
             }
 
             const doingRun = StatusBar.doing('运行工程中');
@@ -382,7 +381,7 @@ export default class Wsd {
             if (doingDelete !== undefined) {
                 doings.push(doingDelete);
             }
-            await this.delete(conn, name);
+            await this.delete(conn, `Projects/${name}`);
 
             const doingUpload = StatusBar.doing('上传工程中');
             if (doingUpload !== undefined) {
@@ -392,7 +391,6 @@ export default class Wsd {
             for (const workspaceFile of workspaceFiles) {
                 const file = await readFile(workspaceFile.absolutePath);
                 await this.upload(conn, workspaceFile.remotePath, file as Uint8Array);
-                // TODO(move remotePath to relativePath)
             }
 
             Output.println('工程已上传');
