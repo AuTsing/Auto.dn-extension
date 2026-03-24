@@ -1,6 +1,6 @@
-import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
-import { randomUUID } from 'crypto';
+import { readFile, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { resolve } from 'node:path';
 import { WebSocket } from 'ws';
 import Output from './Output';
 import Asker from './Asker';
@@ -328,7 +328,8 @@ export default class Wsd {
             if (doingDelete !== undefined) {
                 doings.push(doingDelete);
             }
-            await this.delete(conn, join('Project', name));
+            const deletePath = this.workspace.resolveRelProjects(name);
+            await this.delete(conn, deletePath);
 
             const doingUpload = StatusBar.doing('上传工程中');
             if (doingUpload !== undefined) {
@@ -337,8 +338,8 @@ export default class Wsd {
             const workspaceFiles = await this.workspace.getWrokspaceFiles();
             for (const workspaceFile of workspaceFiles) {
                 const file = (await readFile(workspaceFile.absPath)) as Uint8Array;
-                const remotePath = join('Project', name, workspaceFile.relPath);
-                await this.upload(conn, remotePath, file);
+                const uploadPath = this.workspace.resolveRelProjects(name, workspaceFile.relPath);
+                await this.upload(conn, uploadPath, file);
             }
 
             const doingRun = StatusBar.doing('运行工程中');
@@ -376,7 +377,8 @@ export default class Wsd {
             if (doingDelete !== undefined) {
                 doings.push(doingDelete);
             }
-            await this.delete(conn, join('Project', name));
+            const deletePath = this.workspace.resolveRelProjects(name);
+            await this.delete(conn, deletePath);
 
             const doingUpload = StatusBar.doing('上传工程中');
             if (doingUpload !== undefined) {
@@ -385,10 +387,8 @@ export default class Wsd {
             const workspaceFiles = await this.workspace.getWrokspaceFiles();
             for (const workspaceFile of workspaceFiles) {
                 const file = (await readFile(workspaceFile.absPath)) as Uint8Array;
-                const remotePath = join('Project', name, workspaceFile.relPath);
-                console.log(remotePath);
-                
-                await this.upload(conn, remotePath, file);
+                const uploadPath = this.workspace.resolveRelProjects(name, workspaceFile.relPath);
+                await this.upload(conn, uploadPath, file);
             }
 
             Output.println('工程已上传');
@@ -412,7 +412,7 @@ export default class Wsd {
             const saveDir = await this.asker.askForSnapshotSaveDir();
             const now = Date.now();
             const filename = `Snapshot_${now}.png`;
-            const path = join(saveDir, filename);
+            const path = resolve(saveDir, filename);
             await writeFile(path, file);
 
             Output.println(`屏幕截图已保存至: ${path}`);

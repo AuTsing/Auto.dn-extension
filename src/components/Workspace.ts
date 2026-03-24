@@ -1,7 +1,7 @@
-import * as Vscode from 'vscode';
 import { readdir, access, readFile, writeFile } from 'node:fs/promises';
-import { join, resolve, basename } from 'node:path';
-import * as Jsonfile from 'jsonfile';
+import { resolve, join } from 'node:path';
+import vscode from 'vscode';
+import jsonfile from 'jsonfile';
 import { NS, DENO_EXTENSION_ID, DENO_NS } from '../values/Constants';
 
 export interface WorkspaceFile {
@@ -18,8 +18,8 @@ export interface DenoConfig {
 }
 
 export default class Workspace {
-    getWorkspaceFolder(): Vscode.WorkspaceFolder {
-        const workspaceFolders = Vscode.workspace.workspaceFolders;
+    getWorkspaceFolder(): vscode.WorkspaceFolder {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
         if (workspaceFolders === undefined) {
             throw new Error('未打开工程');
         }
@@ -46,14 +46,14 @@ export default class Workspace {
             if (dirent.isFile()) {
                 const file = {
                     name: dirent.name,
-                    absPath: join(absPath, dirent.name).replace(/\\/g, '/'),
-                    relPath: join(relPath, dirent.name).replace(/\\/g, '/'),
+                    absPath: resolve(absPath, dirent.name),
+                    relPath: join(relPath, dirent.name),
                 } satisfies WorkspaceFile;
                 files.push(file);
                 continue;
             }
             if (dirent.isDirectory()) {
-                await this.readdirRecursively(join(absPath, dirent.name), join(relPath, dirent.name), files);
+                await this.readdirRecursively(resolve(absPath, dirent.name), join(relPath, dirent.name), files);
                 continue;
             }
         }
@@ -83,21 +83,21 @@ export default class Workspace {
         return workspaceFiles;
     }
 
-    getDenoConfiguration(): Vscode.WorkspaceConfiguration {
-        const denoExtension = Vscode.extensions.getExtension(DENO_EXTENSION_ID);
+    getDenoConfiguration(): vscode.WorkspaceConfiguration {
+        const denoExtension = vscode.extensions.getExtension(DENO_EXTENSION_ID);
         if (!denoExtension) {
             throw new Error('未检测到 Deno 官方插件，请先安装插件后再进行操作');
         }
-        return Vscode.workspace.getConfiguration(DENO_NS);
+        return vscode.workspace.getConfiguration(DENO_NS);
     }
 
-    getConfiguration(): Vscode.WorkspaceConfiguration {
-        return Vscode.workspace.getConfiguration(NS);
+    getConfiguration(): vscode.WorkspaceConfiguration {
+        return vscode.workspace.getConfiguration(NS);
     }
 
     private getDenoConfigPath(): string {
         const workspaceFolder = this.getWorkspaceFolder();
-        const denoConfigPath = join(workspaceFolder.uri.fsPath, 'deno.json');
+        const denoConfigPath = resolve(workspaceFolder.uri.fsPath, 'deno.json');
         return denoConfigPath;
     }
 
@@ -116,26 +116,34 @@ export default class Workspace {
 
     async writeDenoConfig(denoConfig: DenoConfig): Promise<void> {
         const denoConfigPath = this.getDenoConfigPath();
-        await Jsonfile.writeFile(denoConfigPath, denoConfig, { spaces: 4 });
+        await jsonfile.writeFile(denoConfigPath, denoConfig, { spaces: 4 });
     }
 
     getMaybeEntryPointPaths(): string[] {
         const workspaceFolder = this.getWorkspaceFolder();
         const maybeEntryPointPaths = [
-            join(workspaceFolder.uri.fsPath, 'main.ts'),
-            join(workspaceFolder.uri.fsPath, 'main.js'),
+            resolve(workspaceFolder.uri.fsPath, 'main.ts'),
+            resolve(workspaceFolder.uri.fsPath, 'main.js'),
         ];
         return maybeEntryPointPaths;
     }
 
     private getEntryPointPath(): string {
         const workspaceFolder = this.getWorkspaceFolder();
-        const mainJsPath = join(workspaceFolder.uri.fsPath, 'main.ts');
+        const mainJsPath = resolve(workspaceFolder.uri.fsPath, 'main.ts');
         return mainJsPath;
     }
 
     async writeEntryPoint(content: Uint8Array): Promise<void> {
         const mainJsPath = this.getEntryPointPath();
         await writeFile(mainJsPath, content);
+    }
+
+    resolveRelProjects(...paths: string[]): string {
+        return join('Projects', ...paths).replace(/\\/g, '/');
+    }
+
+    resolveRelResources(...paths: string[]): string {
+        return join('Resources', ...paths).replace(/\\/g, '/');
     }
 }
