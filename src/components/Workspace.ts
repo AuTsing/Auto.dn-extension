@@ -18,7 +18,7 @@ export interface DenoConfig {
 }
 
 export default class Workspace {
-    getWorkspaceFolder(): vscode.WorkspaceFolder {
+    private getWorkspaceFolder(): vscode.WorkspaceFolder {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (workspaceFolders === undefined) {
             throw new Error('未打开工程');
@@ -31,6 +31,10 @@ export default class Workspace {
 
     getWorkspaceName(): string {
         return this.getWorkspaceFolder().name;
+    }
+
+    getWorkspacePath(): string {
+        return this.getWorkspaceFolder().uri.fsPath;
     }
 
     private async readdirRecursively(
@@ -61,16 +65,16 @@ export default class Workspace {
     }
 
     async getWrokspaceFiles(): Promise<WorkspaceFile[]> {
-        const workspaceFolder = this.getWorkspaceFolder();
+        const path = this.getWorkspacePath();
         const dirs = new Array<string>();
 
-        dirs.push(workspaceFolder.uri.fsPath);
+        dirs.push(path);
 
         const denoConfig = await this.readDenoConfig();
         const imports = Object.values(denoConfig.imports ?? {});
         const localImports = imports.filter(it => typeof it === 'string' && it.startsWith('.')) as string[];
         for (const it of localImports) {
-            const abs = resolve(workspaceFolder.uri.fsPath, it);
+            const abs = resolve(path, it);
             dirs.push(abs);
         }
 
@@ -96,8 +100,8 @@ export default class Workspace {
     }
 
     private getDenoConfigPath(): string {
-        const workspaceFolder = this.getWorkspaceFolder();
-        const denoConfigPath = resolve(workspaceFolder.uri.fsPath, 'deno.json');
+        const path = this.getWorkspacePath();
+        const denoConfigPath = resolve(path, 'deno.json');
         return denoConfigPath;
     }
 
@@ -120,17 +124,14 @@ export default class Workspace {
     }
 
     getMaybeEntryPointPaths(): string[] {
-        const workspaceFolder = this.getWorkspaceFolder();
-        const maybeEntryPointPaths = [
-            resolve(workspaceFolder.uri.fsPath, 'main.ts'),
-            resolve(workspaceFolder.uri.fsPath, 'main.js'),
-        ];
+        const path = this.getWorkspacePath();
+        const maybeEntryPointPaths = [resolve(path, 'main.ts'), resolve(path, 'main.js')];
         return maybeEntryPointPaths;
     }
 
     private getEntryPointPath(): string {
-        const workspaceFolder = this.getWorkspaceFolder();
-        const mainJsPath = resolve(workspaceFolder.uri.fsPath, 'main.ts');
+        const path = this.getWorkspacePath();
+        const mainJsPath = resolve(path, 'main.ts');
         return mainJsPath;
     }
 

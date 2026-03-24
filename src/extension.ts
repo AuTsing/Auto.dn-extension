@@ -8,6 +8,7 @@ import Workspace from './components/Workspace';
 import StatusBar from './components/StatusBar';
 import Storage from './components/Storage';
 import WsClient from './components/WsClient';
+import { Zipper } from './components/Zipper';
 
 export function activate(context: Vscode.ExtensionContext) {
     const workspace = new Workspace();
@@ -17,6 +18,7 @@ export function activate(context: Vscode.ExtensionContext) {
     const wsClient = new WsClient();
     const wsd = new Wsd(asker, workspace, storage, wsClient);
     const initializer = new Initializer(context, workspace, storage);
+    const zipper = new Zipper(workspace);
 
     Output.instance = new Output();
     StatusBar.instance = new StatusBar();
@@ -28,6 +30,7 @@ export function activate(context: Vscode.ExtensionContext) {
     registry.register('stop', () => wsd.handleStop());
     registry.register('upload', () => wsd.handleUpload());
     registry.register('snapshot', () => wsd.handleSnapshot());
+    registry.register('zip', () => zipper.handleZip());
     registry.register('clickStatusBarItem', () => StatusBar.instance?.handleClickStatusBarItem());
     registry.listenOnDidChangeConfiguration('autodn.enable', () => initializer.handleDidChangeEnable());
 
