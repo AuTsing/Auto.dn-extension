@@ -1,4 +1,4 @@
-import * as Vscode from 'vscode';
+import vscode from 'vscode';
 import Storage from './Storage';
 
 export default class Asker {
@@ -20,7 +20,7 @@ export default class Asker {
 
     async askForWsUrl(): Promise<string> {
         const url =
-            (await Vscode.window.showInputBox({
+            (await vscode.window.showInputBox({
                 prompt: '请输入WS服务器URL',
                 value: 'ws://192.168.',
                 placeHolder: 'ws://192.168.',
@@ -36,7 +36,7 @@ export default class Asker {
         }
         const defaultSelections = ['清空历史设备', '连接新设备'];
         const selections = defaultSelections.concat(wsUrls).reverse();
-        const selection = (await Vscode.window.showQuickPick(selections, { placeHolder: '请输入WS服务器URL' })) ?? '';
+        const selection = (await vscode.window.showQuickPick(selections, { placeHolder: '请输入WS服务器URL' })) ?? '';
         if (selection === '连接新设备') {
             return this.askForWsUrl();
         }
@@ -50,7 +50,7 @@ export default class Asker {
 
     async askForSnapshotSaveDir(): Promise<string> {
         const dir =
-            (await Vscode.window.showOpenDialog({
+            (await vscode.window.showOpenDialog({
                 canSelectFiles: false,
                 canSelectFolders: true,
                 canSelectMany: false,
@@ -60,5 +60,19 @@ export default class Asker {
             throw new Error('保存路径选择不正确');
         }
         return dir[0].fsPath;
+    }
+
+    async askForSingleFile(): Promise<string> {
+        const uris =
+            (await vscode.window.showOpenDialog({
+                canSelectFiles: true,
+                canSelectFolders: false,
+                canSelectMany: false,
+                title: '选择文件',
+            })) ?? [];
+        if (uris.length === 0) {
+            throw new Error('未选择有效文件');
+        }
+        return uris[0].fsPath;
     }
 }

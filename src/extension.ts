@@ -28,7 +28,8 @@ export function activate(context: Vscode.ExtensionContext) {
     registry.register('disconnect', () => wsd.handleDisconnect());
     registry.register('run', () => wsd.handleRun());
     registry.register('stop', () => wsd.handleStop());
-    registry.register('upload', () => wsd.handleUpload());
+    registry.register('uploadProject', () => wsd.handleUploadProject());
+    registry.register('uploadFile', () => wsd.handleUploadFile());
     registry.register('snapshot', () => wsd.handleSnapshot());
     registry.register('zip', () => zipper.handleZip());
     registry.register('clickStatusBarItem', () => StatusBar.instance?.handleClickStatusBarItem());

@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { WebSocket } from 'ws';
 import Output from './Output';
 import Asker from './Asker';
@@ -367,7 +367,7 @@ export default class Wsd {
         }
     }
 
-    async handleUpload() {
+    async handleUploadProject() {
         const doings: StatusItem[] = [];
         try {
             const conn = await this.getConn();
@@ -396,6 +396,24 @@ export default class Wsd {
             Output.eprintln('上传工程失败:', e);
         } finally {
             doings.forEach(it => it.dispose());
+        }
+    }
+
+    async handleUploadFile() {
+        const doing = StatusBar.doing('上传中');
+        try {
+            const conn = await this.getConn();
+            const path = await this.asker.askForSingleFile();
+            const name = basename(path);
+            const uploadPath = this.workspace.resolveRelResources(name);
+            const file = (await readFile(path)) as Uint8Array;
+            await this.upload(conn, uploadPath, file);
+
+            Output.println('文件已上传:', uploadPath);
+        } catch (e) {
+            Output.eprintln('上传文件失败:', e);
+        } finally {
+            doing?.dispose();
         }
     }
 

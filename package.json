@@ -47,8 +47,12 @@
                 "title": "Autodn: 停止工程"
             },
             {
-                "command": "autodn.upload",
+                "command": "autodn.uploadProject",
                 "title": "Autodn: 上传工程"
+            },
+            {
+                "command": "autodn.uploadFile",
+                "title": "Autodn: 上传文件"
             },
             {
                 "command": "autodn.snapshot",
