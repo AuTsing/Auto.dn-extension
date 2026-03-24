@@ -1,20 +1,16 @@
-//@ts-check
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-'use strict';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const path = require('path');
-
-//@ts-check
-/** @typedef {import('webpack').Configuration} WebpackConfig **/
-
-/** @type WebpackConfig */
-const extensionConfig = {
+export default {
     target: 'node',
     mode: 'none',
     entry: './src/extension.ts',
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'extension.js',
+        filename: 'extension.cjs',
         libraryTarget: 'commonjs2',
     },
     externals: {
@@ -43,5 +39,3 @@ const extensionConfig = {
         level: 'log',
     },
 };
-
-module.exports = [extensionConfig];
