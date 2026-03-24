@@ -1,13 +1,13 @@
 import * as Vscode from 'vscode';
-import * as Fs from 'node:fs/promises';
-import * as Path from 'node:path';
+import { readdir, access, readFile, writeFile } from 'node:fs/promises';
+import { join, resolve, basename } from 'node:path';
 import * as Jsonfile from 'jsonfile';
 import { NS, DENO_EXTENSION_ID, DENO_NS } from '../values/Constants';
 
 export interface WorkspaceFile {
     name: string;
-    absolutePath: string;
-    remotePath: string;
+    absPath: string;
+    relPath: string;
 }
 
 export interface DenoConfig {
@@ -20,7 +20,7 @@ export interface DenoConfig {
 export default class Workspace {
     getWorkspaceFolder(): Vscode.WorkspaceFolder {
         const workspaceFolders = Vscode.workspace.workspaceFolders;
-        if (!workspaceFolders) {
+        if (workspaceFolders === undefined) {
             throw new Error('未打开工程');
         }
         if (workspaceFolders.length > 1) {
@@ -29,31 +29,31 @@ export default class Workspace {
         return workspaceFolders[0];
     }
 
+    getWorkspaceName(): string {
+        return this.getWorkspaceFolder().name;
+    }
+
     private async readdirRecursively(
-        absolutePath: string,
-        relativePath: string = '',
+        absPath: string,
+        relPath: string = '',
         files: WorkspaceFile[] = [],
     ): Promise<WorkspaceFile[]> {
-        const dirents = await Fs.readdir(absolutePath, { withFileTypes: true });
+        const dirents = await readdir(absPath, { withFileTypes: true });
         for (const dirent of dirents) {
             if (dirent.name.startsWith('.')) {
                 continue;
             }
             if (dirent.isFile()) {
-                const file: WorkspaceFile = {
+                const file = {
                     name: dirent.name,
-                    absolutePath: Path.join(absolutePath, dirent.name).replace(/\\/g, '/'),
-                    remotePath: Path.join(relativePath, dirent.name).replace(/\\/g, '/'),
-                };
+                    absPath: join(absPath, dirent.name).replace(/\\/g, '/'),
+                    relPath: join(relPath, dirent.name).replace(/\\/g, '/'),
+                } satisfies WorkspaceFile;
                 files.push(file);
                 continue;
             }
             if (dirent.isDirectory()) {
-                await this.readdirRecursively(
-                    Path.join(absolutePath, dirent.name),
-                    Path.join(relativePath, dirent.name),
-                    files,
-                );
+                await this.readdirRecursively(join(absPath, dirent.name), join(relPath, dirent.name), files);
                 continue;
             }
         }
@@ -61,21 +61,24 @@ export default class Workspace {
     }
 
     async getWrokspaceFiles(): Promise<WorkspaceFile[]> {
-        const workspaceFiles = [] as WorkspaceFile[];
         const workspaceFolder = this.getWorkspaceFolder();
+        const dirs = new Array<string>();
+
+        dirs.push(workspaceFolder.uri.fsPath);
 
         const denoConfig = await this.readDenoConfig();
         const imports = Object.values(denoConfig.imports ?? {});
         const localImports = imports.filter(it => typeof it === 'string' && it.startsWith('.')) as string[];
-        const localImportsAbsolutePaths = localImports.map(it => Path.resolve(workspaceFolder.uri.fsPath, it));
-        for (const path of localImportsAbsolutePaths) {
-            const name = Path.basename(path);
-            const files = await this.readdirRecursively(path, `Projects/${name}`);
-            workspaceFiles.push(...files);
+        for (const it of localImports) {
+            const abs = resolve(workspaceFolder.uri.fsPath, it);
+            dirs.push(abs);
         }
 
-        const files = await this.readdirRecursively(workspaceFolder.uri.fsPath, `Projects/${workspaceFolder.name}`);
-        workspaceFiles.push(...files);
+        const workspaceFiles = new Array<WorkspaceFile>();
+        for (const it of dirs) {
+            const files = await this.readdirRecursively(it);
+            workspaceFiles.push(...files);
+        }
 
         return workspaceFiles;
     }
@@ -94,19 +97,19 @@ export default class Workspace {
 
     private getDenoConfigPath(): string {
         const workspaceFolder = this.getWorkspaceFolder();
-        const denoConfigPath = Path.join(workspaceFolder.uri.fsPath, 'deno.json');
+        const denoConfigPath = join(workspaceFolder.uri.fsPath, 'deno.json');
         return denoConfigPath;
     }
 
     async readDenoConfig(): Promise<DenoConfig> {
         const denoConfigPath = this.getDenoConfigPath();
-        const denoConfigPathExist = await Fs.access(denoConfigPath)
+        const denoConfigPathExist = await access(denoConfigPath)
             .then(() => true)
             .catch(() => false);
         if (denoConfigPathExist === false) {
             return {};
         }
-        const denoConfigJson = await Fs.readFile(denoConfigPath, { encoding: 'utf-8' });
+        const denoConfigJson = await readFile(denoConfigPath, { encoding: 'utf-8' });
         const denoConfig = JSON.parse(denoConfigJson) satisfies DenoConfig;
         return denoConfig;
     }
@@ -119,20 +122,20 @@ export default class Workspace {
     getMaybeEntryPointPaths(): string[] {
         const workspaceFolder = this.getWorkspaceFolder();
         const maybeEntryPointPaths = [
-            Path.join(workspaceFolder.uri.fsPath, 'main.ts'),
-            Path.join(workspaceFolder.uri.fsPath, 'main.js'),
+            join(workspaceFolder.uri.fsPath, 'main.ts'),
+            join(workspaceFolder.uri.fsPath, 'main.js'),
         ];
         return maybeEntryPointPaths;
     }
 
     private getEntryPointPath(): string {
         const workspaceFolder = this.getWorkspaceFolder();
-        const mainJsPath = Path.join(workspaceFolder.uri.fsPath, 'main.ts');
+        const mainJsPath = join(workspaceFolder.uri.fsPath, 'main.ts');
         return mainJsPath;
     }
 
     async writeEntryPoint(content: Uint8Array): Promise<void> {
         const mainJsPath = this.getEntryPointPath();
-        await Fs.writeFile(mainJsPath, content);
+        await writeFile(mainJsPath, content);
     }
 }

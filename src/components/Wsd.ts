@@ -117,12 +117,6 @@ export default class Wsd {
         return this.wsc;
     }
 
-    private getProjectName(): string {
-        const workspaceFolder = this.workspace.getWorkspaceFolder();
-        const name = workspaceFolder.name;
-        return name;
-    }
-
     async handleConnect() {
         const doing = StatusBar.doing('连接中');
         try {
@@ -319,7 +313,7 @@ export default class Wsd {
         const doings: StatusItem[] = [];
         try {
             const conn = await this.getConn();
-            const name = this.getProjectName();
+            const name = this.workspace.getWorkspaceName();
 
             const projects = await this.getRunningProjects(conn);
             if (projects.includes(name)) {
@@ -334,7 +328,7 @@ export default class Wsd {
             if (doingDelete !== undefined) {
                 doings.push(doingDelete);
             }
-            await this.delete(conn, `Projects/${name}`);
+            await this.delete(conn, join('Project', name));
 
             const doingUpload = StatusBar.doing('上传工程中');
             if (doingUpload !== undefined) {
@@ -342,8 +336,9 @@ export default class Wsd {
             }
             const workspaceFiles = await this.workspace.getWrokspaceFiles();
             for (const workspaceFile of workspaceFiles) {
-                const file = await readFile(workspaceFile.absolutePath);
-                await this.upload(conn, workspaceFile.remotePath, file as Uint8Array);
+                const file = (await readFile(workspaceFile.absPath)) as Uint8Array;
+                const remotePath = join('Project', name, workspaceFile.relPath);
+                await this.upload(conn, remotePath, file);
             }
 
             const doingRun = StatusBar.doing('运行工程中');
@@ -362,7 +357,7 @@ export default class Wsd {
         const doing = StatusBar.doing('停止工程中');
         try {
             const conn = await this.getConn();
-            const name = this.getProjectName();
+            const name = this.workspace.getWorkspaceName();
             await this.stop(conn, name);
         } catch (e) {
             Output.eprintln('停止工程失败:', e);
@@ -375,13 +370,13 @@ export default class Wsd {
         const doings: StatusItem[] = [];
         try {
             const conn = await this.getConn();
-            const name = this.getProjectName();
+            const name = this.workspace.getWorkspaceName();
 
             const doingDelete = StatusBar.doing('清理工程中');
             if (doingDelete !== undefined) {
                 doings.push(doingDelete);
             }
-            await this.delete(conn, `Projects/${name}`);
+            await this.delete(conn, join('Project', name));
 
             const doingUpload = StatusBar.doing('上传工程中');
             if (doingUpload !== undefined) {
@@ -389,8 +384,11 @@ export default class Wsd {
             }
             const workspaceFiles = await this.workspace.getWrokspaceFiles();
             for (const workspaceFile of workspaceFiles) {
-                const file = await readFile(workspaceFile.absolutePath);
-                await this.upload(conn, workspaceFile.remotePath, file as Uint8Array);
+                const file = (await readFile(workspaceFile.absPath)) as Uint8Array;
+                const remotePath = join('Project', name, workspaceFile.relPath);
+                console.log(remotePath);
+                
+                await this.upload(conn, remotePath, file);
             }
 
             Output.println('工程已上传');
