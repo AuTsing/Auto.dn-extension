@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 /**
- * @version 0.23.0
+ * @version 0.23.1
  */
 declare namespace Autodn {
     /**
@@ -4949,7 +4949,7 @@ declare namespace Autodn {
          *
          * @since v0.18.0
          */
-        readonly result: Map<string, QuickUiResultValue>;
+        readonly result: Record<string, QuickUiResultValue>;
     }
 
     /**
