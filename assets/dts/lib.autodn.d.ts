@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 /**
- * @version 0.23.1
+ * @version 0.23.2
  */
 declare namespace Autodn {
     /**
@@ -4095,6 +4095,16 @@ declare namespace Autodn {
          * @since v0.19.0
          */
         updateBackgroundColor(color: number): TextCanvas;
+
+        /**
+         * 更新文字。
+         *
+         * @param text - 文本
+         * @returns 文字画板自身
+         *
+         * @since v0.19.0
+         */
+        updateText(text: string): TextCanvas;
 
         /**
          * 更新文字颜色。
