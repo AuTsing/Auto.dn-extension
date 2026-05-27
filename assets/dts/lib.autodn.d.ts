@@ -1,11 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
 
 /**
- * @version 0.23.2
+ * @version 0.23.3
  */
 declare namespace Autodn {
     /**
-     * 点类构造选项。
+     * 点构造选项。
      *
      * @since v0.18.0
      * @category Js JavaScript
@@ -34,7 +34,7 @@ declare namespace Autodn {
     }
 
     /**
-     * 点类数据。
+     * 点数据结构。
      *
      * @since v0.18.0
      * @category Js JavaScript
@@ -42,14 +42,14 @@ declare namespace Autodn {
     export type PointData = [number, number, number];
 
     /**
-     * 点类。
+     * 点。
      *
      * @since v0.18.0
      * @category Js JavaScript
      */
     export class Point {
         /**
-         * 默认选项。
+         * 点默认构造选项。
          *
          * @since v0.18.0
          */
@@ -75,61 +75,61 @@ declare namespace Autodn {
         };
 
         /**
-         * 使用默认选项构造 Point 实例。
+         * 使用默认选项构造点实例。
          *
-         * @returns Point 实例
+         * @returns 点实例
          *
          * @since v0.18.0
          */
         static from(): Point;
 
         /**
-         * 使用点类数据构造 Point 实例。
+         * 使用点数据结构构造点实例。
          *
-         * @param xyc - 点类数据
-         * @returns Point 实例
+         * @param xyc - 点数据结构
+         * @returns 点实例
          *
          * @since v0.18.0
          */
         static from(xyc: PointData): Point;
 
         /**
-         * 使用点类构造 Point 实例。
+         * 使用点实例构造点实例。
          *
-         * @param point - 点类的一个实例
-         * @returns Point 实例
+         * @param point - 点实例
+         * @returns 点实例
          *
          * @since v0.18.0
          */
         static from(point: Point): Point;
 
         /**
-         * 使用点类构造选项构造 Point 实例。
+         * 使用点构造选项构造点实例。
          *
-         * @param options - 点类构造选项
-         * @returns Point 实例
+         * @param options - 点构造选项
+         * @returns 点实例
          *
          * @since v0.18.0
          */
         static from(options: PointConstructorOptions): Point;
 
         /**
-         * 使用数值构造 Point 实例。
+         * 使用数值构造点实例。
          *
          * @param x - X坐标值
          * @param y - Y坐标值
          * @param c - 颜色值
-         * @returns Point 实例
+         * @returns 点实例
          *
          * @since v0.18.0
          */
         static from(x: number | null, y: number | null, c: number | null): Point;
 
         /**
-         * 判断一个值是否为合法的点类数据。
+         * 判断是否为合法的点数据结构。
          *
-         * @param value - 任意类型的值
-         * @returns 是否为合法的点类数据
+         * @param value - 任意值
+         * @returns 是否为合法的点数据结构
          *
          * @since v0.18.0
          */
@@ -157,27 +157,25 @@ declare namespace Autodn {
         readonly c: number;
 
         /**
-         * @param x - X坐标值
-         * @param y - Y坐标值
-         * @param c - 颜色值
+         * @param options - 点构造选项
          *
-         * @since v0.18.0
+         * @since v0.23.3
          */
-        constructor(x: number, y: number, c: number);
+        constructor(options?: PointConstructorOptions);
 
         /**
-         * 获取点类数据。
+         * 获取点数据。
          *
-         * @returns 点类数据
+         * @returns 点数据
          *
          * @since v0.18.0
          */
         toXyc(): PointData;
 
         /**
-         * 获取 Uint32Array 包装的取点类数据。
+         * 获取 Uint32Array 包装的点数据。
          *
-         * @returns Uint32Array 包装的点类数据
+         * @returns Uint32Array 包装的点数据
          *
          * @since v0.18.0
          */
@@ -185,7 +183,7 @@ declare namespace Autodn {
     }
 
     /**
-     * 可转换为 Point 的数据类型。
+     * 可转换为点的数据类型。
      *
      * @since v0.18.0
      * @category Js JavaScript
@@ -193,7 +191,7 @@ declare namespace Autodn {
     export type IntoPoint = PointData | Point | PointConstructorOptions;
 
     /**
-     * 矩形类构造选项。
+     * 矩形构造选项。
      *
      * @since v0.18.0
      * @category Js JavaScript
@@ -229,7 +227,7 @@ declare namespace Autodn {
     }
 
     /**
-     * 矩形类数据。
+     * 矩形数据结构。
      *
      * @since v0.18.0
      * @category Js JavaScript
@@ -237,14 +235,14 @@ declare namespace Autodn {
     export type RectData = [number, number, number, number];
 
     /**
-     * 矩形类。
+     * 矩形。
      *
      * @since v0.18.0
      * @category Js JavaScript
      */
     export class Rect {
         /**
-         * 默认选项。
+         * 矩形默认构造选项。
          *
          * @since v0.18.0
          */
@@ -279,62 +277,62 @@ declare namespace Autodn {
         };
 
         /**
-         * 使用默认选项构造 Rect 实例。
+         * 使用默认选项构造矩形实例。
          *
-         * @returns Rect 实例
+         * @returns 矩形实例
          *
          * @since v0.18.0
          */
         static from(): Rect;
 
         /**
-         * 使用矩形类数据构造 Rect 实例。
+         * 使用矩形数据构造矩形实例。
          *
-         * @param ltrb - 矩形类数据
-         * @returns Rect 实例
+         * @param ltrb - 矩形数据结构
+         * @returns 矩形实例
          *
          * @since v0.18.0
          */
         static from(ltrb: RectData): Rect;
 
         /**
-         * 使用矩形类构造 Rect 实例。
+         * 使用矩形实例构造矩形实例。
          *
-         * @param rect - 矩形类的一个实例
-         * @returns Rect 实例
+         * @param rect - 矩形实例
+         * @returns 矩形实例
          *
          * @since v0.18.0
          */
         static from(rect: Rect): Rect;
 
         /**
-         * 使用矩形类构造选项构造 Rect 实例。
+         * 使用矩形构造选项构造矩形实例。
          *
-         * @param options - 矩形类构造选项
-         * @returns Rect 实例
+         * @param options - 矩形构造选项
+         * @returns 矩形实例
          *
          * @since v0.18.0
          */
         static from(options: RectConstructorOptions): Rect;
 
         /**
-         * 使用数值构造 Rect 实例。
+         * 使用数值构造矩形实例。
          *
          * @param left - 左值
          * @param top - 上值
          * @param right - 右值
          * @param bottom - 下值
-         * @returns Rect 实例
+         * @returns 矩形实例
          *
          * @since v0.18.0
          */
         static from(left: number | null, top: number | null, right: number | null, bottom: number | null): Rect;
 
         /**
-         * 判断一个值是否为合法的矩形类数据。
+         * 判断是否为合法的矩形数据结构。
          *
-         * @param value - 任意类型的值
-         * @returns 是否为合法的矩形类数据
+         * @param value - 任意值
+         * @returns 是否为合法的矩形数据结构
          *
          * @since v0.18.0
          */
@@ -369,28 +367,25 @@ declare namespace Autodn {
         readonly bottom: number;
 
         /**
-         * @param left - 左值
-         * @param top - 上值
-         * @param right - 右值
-         * @param bottom - 下值
+         * @param options - 矩形构造选项
          *
-         * @since v0.18.0
+         * @since v0.23.3
          */
-        constructor(left: number, top: number, right: number, bottom: number);
+        constructor(options?: RectConstructorOptions);
 
         /**
-         * 获取矩形类数据。
+         * 获取矩形数据结构。
          *
-         * @returns 矩形类数据
+         * @returns 矩形数据结构
          *
          * @since v0.18.0
          */
         toLtrb(): RectData;
 
         /**
-         * 获取 Uint32Array 包装的取矩形类数据。
+         * 获取 Uint32Array 包装的取矩形数据结构。
          *
-         * @returns Uint32Array 包装的取矩形类数据
+         * @returns Uint32Array 包装的取矩形数据结构
          *
          * @since v0.18.0
          */
@@ -398,7 +393,7 @@ declare namespace Autodn {
     }
 
     /**
-     * 可转换为 Rect 的数据类型。
+     * 可转换为矩形的数据类型。
      *
      * @since v0.18.0
      * @category Js JavaScript
@@ -722,9 +717,9 @@ declare namespace Autodn {
         getMultiLine(): boolean;
 
         /**
-         * 获取 UI 对象在屏幕中的矩形类。
+         * 获取 UI 对象在屏幕中的矩形。
          *
-         * @returns 矩形类
+         * @returns 矩形
          *
          * @since v0.18.0
          */
@@ -1355,7 +1350,7 @@ declare namespace Autodn {
         /**
          * 添加过滤器，条件为其 矩形 等于 指定矩形。
          *
-         * @param ltrb - 指定矩形的矩形类数据
+         * @param ltrb - 指定矩形的矩形数据结构
          * @returns UI 选择器构造器自身
          *
          * @since v0.18.0
@@ -1398,7 +1393,7 @@ declare namespace Autodn {
         /**
          * 添加过滤器，条件为其 矩形 等于 指定矩形。
          *
-         * @param ltrb - 指定矩形的矩形类数据
+         * @param ltrb - 指定矩形的矩形数据结构
          * @returns UI 选择器构造器自身
          *
          * @since v0.18.0
@@ -1441,7 +1436,7 @@ declare namespace Autodn {
         /**
          * 添加过滤器，条件为其 矩形 被包含在指定矩形中。
          *
-         * @param ltrb - 指定矩形的矩形类数据
+         * @param ltrb - 指定矩形的矩形数据结构
          * @returns UI 选择器构造器自身
          *
          * @since v0.18.0
@@ -1484,7 +1479,7 @@ declare namespace Autodn {
         /**
          * 添加过滤器，条件为其 矩形 包含指定矩形。
          *
-         * @param ltrb - 指定矩形的矩形类数据
+         * @param ltrb - 指定矩形的矩形数据结构
          * @returns UI 选择器构造器自身
          *
          * @since v0.18.0
