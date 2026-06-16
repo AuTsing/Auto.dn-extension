@@ -1,23 +1,25 @@
-import * as Vscode from 'vscode';
-import * as Fs from 'node:fs/promises';
-import * as Path from 'node:path';
-import * as Url from 'node:url';
+import { ExtensionContext, commands } from 'vscode';
+import { access, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import Output from './Output';
 import Workspace from './Workspace';
 import Storage from './Storage';
 import StatusBar from './StatusBar';
 
+const { executeCommand } = commands;
+
 export default class Initializer {
     constructor(
-        private readonly context: Vscode.ExtensionContext,
+        private readonly context: ExtensionContext,
         private readonly workspace: Workspace,
         private readonly storage: Storage,
     ) {}
 
     private getDtsUrl(): string {
         const root = this.context.extensionPath;
-        const dts = Path.join(root, 'assets', 'dts', 'lib.autodn.d.ts');
-        const url = Url.pathToFileURL(dts);
+        const dts = join(root, 'assets', 'dts', 'lib.autodn.d.ts');
+        const url = pathToFileURL(dts);
         return url.href;
     }
 
@@ -44,7 +46,7 @@ export default class Initializer {
         const maybeEntryPointPaths = this.workspace.getMaybeEntryPointPaths();
 
         for (const maybeEntryPointPath of maybeEntryPointPaths) {
-            const maybeEntryPointPathExist = await Fs.access(maybeEntryPointPath)
+            const maybeEntryPointPathExist = await access(maybeEntryPointPath)
                 .then(() => true)
                 .catch(() => false);
             if (maybeEntryPointPathExist === true) {
@@ -53,8 +55,8 @@ export default class Initializer {
         }
 
         const extensionFolder = this.context.extensionPath;
-        const entryPointTemplatePath = Path.join(extensionFolder, 'assets', 'templates', 'main.ts');
-        const entryPointTemplateContent = new Uint8Array(await Fs.readFile(entryPointTemplatePath));
+        const entryPointTemplatePath = join(extensionFolder, 'assets', 'templates', 'main.ts');
+        const entryPointTemplateContent = new Uint8Array(await readFile(entryPointTemplatePath));
 
         await this.workspace.writeEntryPoint(entryPointTemplateContent);
     }
@@ -104,7 +106,7 @@ export default class Initializer {
 
             await this.updateDts();
             await new Promise(resolve => setTimeout(() => resolve(null), 1000));
-            await Vscode.commands.executeCommand('deno.client.restart');
+            await executeCommand('deno.client.restart');
 
             Output.printlnAndShow('类型定义文件已更新');
         } catch (err) {
