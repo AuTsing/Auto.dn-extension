@@ -30,19 +30,33 @@ export default class Initializer {
         return !types.includes(dtsUrl);
     }
 
-    private async updateDts(): Promise<void> {
-        const dtsUrl = this.getDtsUrl();
+    private updateDtsUrl(origin: string): string {
+        const originWithoutVersion = origin.replace(/\d+\.\d+\.\d+/, '{version}');
+        const current = this.getDtsUrl();
+        const currentWithoutVersion = current.replace(/\d+\.\d+\.\d+/, '{version}');
+
+        if (originWithoutVersion === currentWithoutVersion) {
+            return current;
+        } else {
+            return origin;
+        }
+    }
+
+    private async updateDts() {
         const denoConfig = await this.workspace.readDenoConfig();
         const types = denoConfig?.compilerOptions?.types ?? [];
-        const filteredTypes = types.filter(it => !it.endsWith('lib.autodn.d.ts'));
-        filteredTypes.push(dtsUrl);
+        const updatedTypes = types.map(it => this.updateDtsUrl(it));
+        const current = this.getDtsUrl();
+        if (!updatedTypes.includes(current)) {
+            updatedTypes.push(current);
+        }
         denoConfig.compilerOptions = denoConfig.compilerOptions ?? {};
-        denoConfig.compilerOptions.types = filteredTypes;
+        denoConfig.compilerOptions.types = updatedTypes;
 
         await this.workspace.writeDenoConfig(denoConfig);
     }
 
-    private async initEntryPoint(): Promise<void> {
+    private async initEntryPoint() {
         const maybeEntryPointPaths = this.workspace.getMaybeEntryPointPaths();
 
         for (const maybeEntryPointPath of maybeEntryPointPaths) {
@@ -61,11 +75,11 @@ export default class Initializer {
         await this.workspace.writeEntryPoint(entryPointTemplateContent);
     }
 
-    private async initDenoConfig(): Promise<void> {
+    private async initDenoConfig() {
         await this.updateDts();
     }
 
-    private async initConfiguration(): Promise<void> {
+    private async initConfiguration() {
         const denoConfig = this.workspace.getDenoConfiguration();
         if (denoConfig.get('enable') !== true) {
             await denoConfig.update('enable', true);
