@@ -1,5 +1,5 @@
 import * as Vscode from 'vscode';
-import { NS } from '../values/Constants';
+import { NS } from '../data/constant';
 
 export default class Registry {
     constructor(private readonly context: Vscode.ExtensionContext) {}

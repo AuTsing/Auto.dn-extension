@@ -2,7 +2,7 @@ import { readdir, access, readFile, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import vscode from 'vscode';
 import jsonfile from 'jsonfile';
-import { NS, DENO_EXTENSION_ID, DENO_NS } from '../values/Constants';
+import { NS, DENO_EXTENSION_ID, DENO_NS } from '../data/constant';
 
 export interface WorkspaceFile {
     name: string;

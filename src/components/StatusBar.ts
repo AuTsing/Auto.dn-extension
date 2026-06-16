@@ -1,6 +1,6 @@
 import * as Vscode from 'vscode';
 import Output from './Output';
-import { NAME, NS } from '../values/Constants';
+import { NAME, NS } from '../data/constant';
 
 export class StatusItem {
     prefix: string;

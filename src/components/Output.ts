@@ -1,6 +1,6 @@
 import * as Vscode from 'vscode';
 import * as Util from 'util';
-import { NAME } from '../values/Constants';
+import { NAME } from '../data/constant';
 
 export default class Output {
     static instance?: Output;
