@@ -7,7 +7,7 @@ import Workspace from './components/Workspace';
 import Storage from './components/Storage';
 import WsClient from './components/WsClient';
 import { Zipper } from './components/Zipper';
-import { handleClickStatusBarItem } from './components/StatusBar';
+import { handleClickStatusBarItem } from './ui/status_bar';
 
 export function activate(context: Vscode.ExtensionContext) {
     const workspace = new Workspace();

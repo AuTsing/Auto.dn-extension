@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { printlnAndShow, eprintln } from '../debug/output';
 import Workspace from './Workspace';
 import Storage from './Storage';
-import { handleShowStatusBar, handleHideStatusBar } from './StatusBar';
+import { handleShowStatusBar, handleHideStatusBar } from '../ui/status_bar';
 
 const { executeCommand } = commands;
 

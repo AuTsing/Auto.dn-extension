@@ -2,7 +2,7 @@ import { createWriteStream } from 'node:fs';
 import { ZipFile } from 'yazl';
 import Workspace from './Workspace';
 import { println, eprintln } from '../debug/output';
-import { dispose, doing, toast } from './StatusBar';
+import { dispose, doing, toast } from '../ui/status_bar';
 
 export class Zipper {
     private readonly workspace: Workspace;

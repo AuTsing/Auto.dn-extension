@@ -5,7 +5,7 @@ import { WebSocket } from 'ws';
 import { println, wprintln, eprintln } from '../debug/output';
 import Asker from './Asker';
 import Workspace from './Workspace';
-import { StatusItem, dispose, connected, disconnect, doing, running } from './StatusBar';
+import { StatusItem, dispose, connected, disconnect, doing, running } from '../ui/status_bar';
 import Storage from './Storage';
 import WsClient, {
     LogLevel,
