@@ -1,5 +1,5 @@
 import * as Vscode from 'vscode';
-import Output from './Output';
+import { eprintln } from '../debug/output';
 import { NAME, NS } from '../data/constant';
 
 export class StatusItem {
@@ -136,7 +136,7 @@ export default class StatusBar {
             this.statusBarItem.show();
             this.refresher = setInterval(() => this.refresh(), 1000);
         } catch (e) {
-            Output.eprintln('启用状态栏失败:', e);
+            eprintln('启用状态栏失败:', e);
         }
     }
 
@@ -146,7 +146,7 @@ export default class StatusBar {
             clearInterval(Number(this.refresher));
             this.refresher = null;
         } catch (e) {
-            Output.eprintln('禁用状态栏失败:', e);
+            eprintln('禁用状态栏失败:', e);
         }
     }
 

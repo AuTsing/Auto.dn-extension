@@ -2,7 +2,7 @@ import { ExtensionContext, commands } from 'vscode';
 import { access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import Output from './Output';
+import { printlnAndShow, eprintln } from '../debug/output';
 import Workspace from './Workspace';
 import Storage from './Storage';
 import StatusBar from './StatusBar';
@@ -98,9 +98,9 @@ export default class Initializer {
             await this.initEntryPoint();
             await this.initDenoConfig();
             await this.initConfiguration();
-            Output.printlnAndShow('工作区初始化成功');
+            printlnAndShow('工作区初始化成功');
         } catch (err) {
-            Output.eprintln('工作区初始化失败:', err);
+            eprintln('工作区初始化失败:', err);
         }
     }
 
@@ -122,9 +122,9 @@ export default class Initializer {
             await new Promise(resolve => setTimeout(() => resolve(null), 1000));
             await executeCommand('deno.client.restart');
 
-            Output.printlnAndShow('类型定义文件已更新');
+            printlnAndShow('类型定义文件已更新');
         } catch (err) {
-            Output.eprintln('类型定义文件更新失败:', err);
+            eprintln('类型定义文件更新失败:', err);
         }
     }
 

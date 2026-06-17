@@ -1,7 +1,7 @@
 import { createWriteStream } from 'node:fs';
 import { ZipFile } from 'yazl';
 import Workspace from './Workspace';
-import Output from './Output';
+import { println, eprintln } from '../debug/output';
 import StatusBar from './StatusBar';
 
 export class Zipper {
@@ -34,10 +34,10 @@ export class Zipper {
             const path = `${workspacePath}.zip`;
             await this.wairForZip(path, zip);
 
-            Output.println('打包工程成功:', path);
+            println('打包工程成功:', path);
             StatusBar.result('打包工程成功');
         } catch (e) {
-            Output.eprintln('连接设备失败:', e);
+            eprintln('连接设备失败:', e);
         } finally {
             doing?.dispose();
         }

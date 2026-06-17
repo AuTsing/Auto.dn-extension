@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { basename, resolve } from 'node:path';
 import { WebSocket } from 'ws';
-import Output from './Output';
+import { println, wprintln, eprintln } from '../debug/output';
 import Asker from './Asker';
 import Workspace from './Workspace';
 import StatusBar, { StatusItem } from './StatusBar';
@@ -56,7 +56,7 @@ export default class Wsd {
             this.storage.addWsUrl(url);
             const wsc = new WebSocket(url, { handshakeTimeout: 5000 });
             wsc.on('open', () => {
-                Output.println(`已连接设备: ${url}`);
+                println(`已连接设备: ${url}`);
                 StatusBar.connected(url);
                 resolve(wsc);
             });
@@ -65,7 +65,7 @@ export default class Wsd {
             });
             wsc.on('close', () => {
                 if (this.wsc !== null) {
-                    Output.println(`已断开设备: ${url}`);
+                    println(`已断开设备: ${url}`);
                     StatusBar.disconnected(url);
                     this.wsc = null;
                 }
@@ -96,9 +96,9 @@ export default class Wsd {
             }
             this.connecting = true;
             const lastUrl = urls[urls.length - 1];
-            Output.println(`未连接设备，尝试连接最后使用设备: ${lastUrl}`);
+            println(`未连接设备，尝试连接最后使用设备: ${lastUrl}`);
             this.wsc = await this.connect(lastUrl);
-            Output.println('连接设备成功:', lastUrl);
+            println('连接设备成功:', lastUrl);
         } catch (e) {
             throw e;
         } finally {
@@ -126,9 +126,9 @@ export default class Wsd {
             this.connecting = true;
             const url = await this.asker.askForWsUrlWithHistory();
             this.wsc = await this.connect(url);
-            Output.println('连接设备成功:', url);
+            println('连接设备成功:', url);
         } catch (e) {
-            Output.eprintln('连接设备失败:', e);
+            eprintln('连接设备失败:', e);
         } finally {
             doing?.dispose();
             this.connecting = false;
@@ -139,7 +139,7 @@ export default class Wsd {
         try {
             this.disconnect();
         } catch (e) {
-            Output.eprintln('断开设备失败:', e);
+            eprintln('断开设备失败:', e);
         }
     }
 
@@ -187,7 +187,7 @@ export default class Wsd {
                     throw new Error(`不支持的命令: ${message}`);
             }
         } catch (e) {
-            Output.eprintln(e);
+            eprintln(e);
         }
     }
 
@@ -206,7 +206,7 @@ export default class Wsd {
             try {
                 await this.wsClient.send(conn, newMessage);
             } catch (e2) {
-                Output.eprintln(e2);
+                eprintln(e2);
             }
         }
     }
@@ -226,7 +226,7 @@ export default class Wsd {
             try {
                 await this.wsClient.send(conn, newMessage);
             } catch (e2) {
-                Output.eprintln(e2);
+                eprintln(e2);
             }
         }
     }
@@ -234,16 +234,16 @@ export default class Wsd {
     private handleLogMessage(message: Log) {
         switch (message.data.level) {
             case LogLevel.Info:
-                Output.println(message.data.message);
+                println(message.data.message);
                 break;
             case LogLevel.Warn:
-                Output.wprintln(message.data.message);
+                wprintln(message.data.message);
                 break;
             case LogLevel.Error:
-                Output.eprintln(message.data.message);
+                eprintln(message.data.message);
                 break;
             default:
-                Output.println(message.data.message);
+                println(message.data.message);
                 break;
         }
     }
@@ -261,7 +261,7 @@ export default class Wsd {
             try {
                 await this.wsClient.send(conn, newMessage);
             } catch (e2) {
-                Output.eprintln(e2);
+                eprintln(e2);
             }
         }
     }
@@ -348,7 +348,7 @@ export default class Wsd {
             }
             await this.run(conn, name);
         } catch (e) {
-            Output.eprintln('运行工程失败:', e);
+            eprintln('运行工程失败:', e);
         } finally {
             doings.forEach(it => it.dispose());
         }
@@ -361,7 +361,7 @@ export default class Wsd {
             const name = this.workspace.getWorkspaceName();
             await this.stop(conn, name);
         } catch (e) {
-            Output.eprintln('停止工程失败:', e);
+            eprintln('停止工程失败:', e);
         } finally {
             doing?.dispose();
         }
@@ -391,9 +391,9 @@ export default class Wsd {
                 await this.upload(conn, uploadPath, file);
             }
 
-            Output.println('工程已上传');
+            println('工程已上传');
         } catch (e) {
-            Output.eprintln('上传工程失败:', e);
+            eprintln('上传工程失败:', e);
         } finally {
             doings.forEach(it => it.dispose());
         }
@@ -409,9 +409,9 @@ export default class Wsd {
             const file = (await readFile(path)) as Uint8Array;
             await this.upload(conn, uploadPath, file);
 
-            Output.println('文件已上传:', uploadPath);
+            println('文件已上传:', uploadPath);
         } catch (e) {
-            Output.eprintln('上传文件失败:', e);
+            eprintln('上传文件失败:', e);
         } finally {
             doing?.dispose();
         }
@@ -433,9 +433,9 @@ export default class Wsd {
             const path = resolve(saveDir, filename);
             await writeFile(path, file);
 
-            Output.println(`屏幕截图已保存至: ${path}`);
+            println(`屏幕截图已保存至: ${path}`);
         } catch (e) {
-            Output.eprintln('屏幕截图失败:', e);
+            eprintln('屏幕截图失败:', e);
         } finally {
             doing?.dispose();
             this.snapshoting = false;

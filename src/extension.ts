@@ -1,6 +1,5 @@
 import * as Vscode from 'vscode';
 import Initializer from './components/Initializer';
-import Output from './components/Output';
 import Wsd from './components/Wsd';
 import Asker from './components/Asker';
 import Registry from './components/Registry';
@@ -20,7 +19,6 @@ export function activate(context: Vscode.ExtensionContext) {
     const initializer = new Initializer(context, workspace, storage);
     const zipper = new Zipper(workspace);
 
-    Output.instance = new Output();
     StatusBar.instance = new StatusBar();
 
     registry.register('initializeWorkspace', () => initializer.handleInitWorkspace());
