@@ -2,7 +2,7 @@ import { createWriteStream } from 'node:fs';
 import { ZipFile } from 'yazl';
 import Workspace from './Workspace';
 import { println, eprintln } from '../debug/output';
-import StatusBar from './StatusBar';
+import { dispose, doing, toast } from './StatusBar';
 
 export class Zipper {
     private readonly workspace: Workspace;
@@ -23,7 +23,7 @@ export class Zipper {
     }
 
     async handleZip() {
-        const doing = StatusBar.doing('打包中');
+        const statusItem = doing('打包中');
         try {
             const workspaceFiles = await this.workspace.getWrokspaceFiles();
             const zip = new ZipFile();
@@ -35,11 +35,11 @@ export class Zipper {
             await this.wairForZip(path, zip);
 
             println('打包工程成功:', path);
-            StatusBar.result('打包工程成功');
+            toast('打包工程成功');
         } catch (e) {
             eprintln('连接设备失败:', e);
         } finally {
-            doing?.dispose();
+            dispose(statusItem.id);
         }
     }
 }

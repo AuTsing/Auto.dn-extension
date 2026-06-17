@@ -1,164 +1,151 @@
-import * as Vscode from 'vscode';
+import { randomUUID } from 'node:crypto';
+import { window, commands, StatusBarAlignment } from 'vscode';
 import { eprintln } from '../debug/output';
 import { NAME, NS } from '../data/constant';
 
+const { createStatusBarItem } = window;
+const { executeCommand } = commands;
+
 export class StatusItem {
-    prefix: string;
+    readonly id: string;
     content: string;
-    surfix: string;
-    private readonly statusItems: StatusItem[];
+    prefix: string;
+    suffix: string;
 
-    constructor(content: string, statusItems: StatusItem[], prefix: string = '', surfix: string = '') {
+    constructor(content: string, prefix: string = '', suffix: string = '') {
+        this.id = randomUUID();
         this.content = content;
-        this.statusItems = statusItems;
         this.prefix = prefix;
-        this.surfix = surfix;
+        this.suffix = suffix;
     }
 
-    public display(): string {
-        return `${this.prefix} ${this.content} ${this.surfix}`;
+    display(): string {
+        return `${this.prefix} ${this.content} ${this.suffix}`;
     }
 
-    public dispose() {
-        const index = this.statusItems.indexOf(this);
-        if (index > -1) {
-            this.statusItems.splice(index, 1);
-        }
-    }
-
-    public updateProgress(percent: number) {
+    updateProgress(percent: number) {
         this.prefix = `${Math.round(percent * 100)}%`;
     }
 }
 
-export default class StatusBar {
-    static instance?: StatusBar;
+const statusBarItem = createStatusBarItem(StatusBarAlignment.Left);
+const doingStatusItems: StatusItem[] = [];
+let runningStatusItem: StatusItem | null = null;
+let connectedStatusItem: StatusItem | null = null;
+const defaultStatusItem: StatusItem = new StatusItem(NAME, '🦕');
 
-    static connected(label: string) {
-        if (!StatusBar.instance) {
-            return;
-        }
-        const statusItem = new StatusItem(label, StatusBar.instance.statusItems, '🦕', '已连接');
-        StatusBar.instance.statusItems.push(statusItem);
+statusBarItem.text = defaultStatusItem.display();
+statusBarItem.tooltip = NAME;
+statusBarItem.command = `${NS}.clickStatusBarItem`;
+
+export function dispose(id: string) {
+    const index = doingStatusItems.findIndex(it => it.id === id);
+    if (index > -1) {
+        doingStatusItems.splice(index, 1);
     }
 
-    static disconnected(label: string) {
-        if (!StatusBar.instance) {
-            return;
-        }
-        const maybeStatusItem = StatusBar.instance.statusItems.find(it => it.content === label);
-        maybeStatusItem?.dispose();
-        StatusBar.running([]);
+    if (runningStatusItem?.id === id) {
+        runningStatusItem = null;
     }
 
-    static doing(task: string): StatusItem | undefined {
-        if (!StatusBar.instance) {
-            return;
-        }
-        const statusItem = new StatusItem(task, StatusBar.instance.statusItems, '$(loading~spin)', '...');
-        StatusBar.instance.statusItems.push(statusItem);
-        StatusBar.instance.refresh();
-        return statusItem;
+    if (connectedStatusItem?.id === id) {
+        connectedStatusItem = null;
     }
 
-    static running(runningProjects: string[]) {
-        if (!StatusBar.instance) {
-            return;
-        }
-        if (!StatusBar.instance.runningStatusItem) {
-            return;
-        }
-        if (runningProjects.length === 0) {
-            StatusBar.instance.runningStatusItem.dispose();
-            return;
-        }
-        if (runningProjects.length === 1) {
-            StatusBar.instance.runningStatusItem.content = runningProjects[0];
-        }
-        if (runningProjects.length > 1) {
-            StatusBar.instance.runningStatusItem.content = `${runningProjects.length} 个工程`;
-            StatusBar.instance.refresh();
-        }
-        if (!StatusBar.instance.statusItems.includes(StatusBar.instance.runningStatusItem)) {
-            StatusBar.instance.statusItems.push(StatusBar.instance.runningStatusItem);
-            StatusBar.instance.refresh();
-        }
-    }
+    refresh();
+}
 
-    static result(label: string) {
-        if (!StatusBar.instance) {
-            return;
-        }
-        const statusItem = new StatusItem(label, StatusBar.instance.statusItems, '✅');
-        StatusBar.instance.statusItems.push(statusItem);
-        StatusBar.instance.refresh();
-        setTimeout(() => statusItem.dispose(), 1500);
-    }
+export function doing(task: string): StatusItem {
+    const statusItem = new StatusItem(task, '$(loading~spin)', '...');
+    doingStatusItems.push(statusItem);
+    refresh();
 
-    static refresh() {
-        if (!StatusBar.instance) {
-            return;
-        }
-        StatusBar.instance.refresh();
-    }
+    return statusItem;
+}
 
-    private readonly statusBarItem: Vscode.StatusBarItem;
-    private readonly statusItems: StatusItem[];
-    private refresher: NodeJS.Timer | null;
-    private runningStatusItem: StatusItem | null;
+export function toast(label: string) {
+    const statusItem = new StatusItem(label, '✅');
+    doingStatusItems.push(statusItem);
+    refresh();
+    setTimeout(() => dispose(statusItem.id), 1500);
+}
 
-    constructor() {
-        this.statusBarItem = Vscode.window.createStatusBarItem(Vscode.StatusBarAlignment.Left);
-        this.statusItems = [];
-        this.refresher = null;
-        this.runningStatusItem = new StatusItem('', this.statusItems, '$(loading~spin)', '运行中');
-        const defaultStatusItem = new StatusItem(NAME, this.statusItems, '🦕');
-        this.statusItems.push(defaultStatusItem);
-        this.statusBarItem.text = defaultStatusItem.display();
-        this.statusBarItem.tooltip = NAME;
-        this.statusBarItem.command = `${NS}.clickStatusBarItem`;
+export function running(runningProjects: string[]) {
+    if (runningProjects.length <= 0) {
+        runningStatusItem = null;
+        refresh();
+        return;
     }
+    if (runningStatusItem === null) {
+        runningStatusItem = new StatusItem('', '$(loading~spin)', '运行中');
+    }
+    if (runningProjects.length === 1) {
+        runningStatusItem.content = runningProjects[0];
+    }
+    if (runningProjects.length > 1) {
+        runningStatusItem.content = `${runningProjects.length} 个工程`;
+    }
+    refresh();
+}
 
-    private refresh() {
-        const statusItem = this.statusItems[this.statusItems.length - 1];
-        this.statusBarItem.text = statusItem.display();
-        if (this.runningStatusItem && this.statusItems.includes(this.runningStatusItem)) {
-            this.statusBarItem.tooltip = '停止工程';
-        } else if (this.statusItems.length > 1) {
-            this.statusBarItem.tooltip = '断开设备';
-        } else {
-            this.statusBarItem.tooltip = '连接设备';
-        }
-    }
+export function connected(label: string) {
+    connectedStatusItem = new StatusItem(label, '🦕', '已连接');
+    refresh();
+}
 
-    handleShowStatusBar() {
-        try {
-            this.statusBarItem.show();
-            this.refresher = setInterval(() => this.refresh(), 1000);
-        } catch (e) {
-            eprintln('启用状态栏失败:', e);
-        }
-    }
+export function disconnect() {
+    connectedStatusItem = null;
+    runningStatusItem = null;
+    doingStatusItems.length = 0;
+    refresh();
+}
 
-    handleHideStatusBar() {
-        try {
-            this.statusBarItem.hide();
-            clearInterval(Number(this.refresher));
-            this.refresher = null;
-        } catch (e) {
-            eprintln('禁用状态栏失败:', e);
-        }
+function refresh() {
+    let statusItem: StatusItem;
+    if (doingStatusItems.length > 0) {
+        statusItem = doingStatusItems.at(-1) ?? defaultStatusItem;
+    } else if (runningStatusItem !== null) {
+        statusItem = runningStatusItem;
+    } else if (connectedStatusItem !== null) {
+        statusItem = connectedStatusItem;
+    } else {
+        statusItem = defaultStatusItem;
     }
+    statusBarItem.text = statusItem.display();
 
-    handleClickStatusBarItem() {
-        if (this.runningStatusItem && this.statusItems.includes(this.runningStatusItem)) {
-            Vscode.commands.executeCommand(`${NS}.stop`);
-            return;
-        }
-        if (this.statusItems.length > 1) {
-            Vscode.commands.executeCommand(`${NS}.disconnect`);
-            return;
-        }
-        Vscode.commands.executeCommand(`${NS}.connect`);
+    if (statusItem === runningStatusItem) {
+        statusBarItem.tooltip = '停止工程';
+    } else if (statusItem === connectedStatusItem) {
+        statusBarItem.tooltip = '断开设备';
+    } else {
+        statusBarItem.tooltip = '连接设备';
     }
+}
+
+export function handleShowStatusBar() {
+    try {
+        statusBarItem.show();
+    } catch (e) {
+        eprintln('启用状态栏失败:', e);
+    }
+}
+
+export function handleHideStatusBar() {
+    try {
+        statusBarItem.hide();
+    } catch (e) {
+        eprintln('禁用状态栏失败:', e);
+    }
+}
+
+export function handleClickStatusBarItem() {
+    if (runningStatusItem !== null) {
+        executeCommand(`${NS}.stop`);
+        return;
+    }
+    if (connectedStatusItem !== null) {
+        executeCommand(`${NS}.disconnect`);
+        return;
+    }
+    executeCommand(`${NS}.connect`);
 }

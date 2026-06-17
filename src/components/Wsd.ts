@@ -5,7 +5,7 @@ import { WebSocket } from 'ws';
 import { println, wprintln, eprintln } from '../debug/output';
 import Asker from './Asker';
 import Workspace from './Workspace';
-import StatusBar, { StatusItem } from './StatusBar';
+import { StatusItem, dispose, connected, disconnect, doing, running } from './StatusBar';
 import Storage from './Storage';
 import WsClient, {
     LogLevel,
@@ -57,7 +57,7 @@ export default class Wsd {
             const wsc = new WebSocket(url, { handshakeTimeout: 5000 });
             wsc.on('open', () => {
                 println(`已连接设备: ${url}`);
-                StatusBar.connected(url);
+                connected(url);
                 resolve(wsc);
             });
             wsc.on('error', e => {
@@ -66,7 +66,7 @@ export default class Wsd {
             wsc.on('close', () => {
                 if (this.wsc !== null) {
                     println(`已断开设备: ${url}`);
-                    StatusBar.disconnected(url);
+                    disconnect();
                     this.wsc = null;
                 }
             });
@@ -85,7 +85,7 @@ export default class Wsd {
     }
 
     private async connectAutomatically(): Promise<void> {
-        const doing = StatusBar.doing('连接中');
+        const statusItem = doing('连接中');
         try {
             const urls = this.storage.getWsUrls();
             if (urls.length === 0) {
@@ -102,7 +102,7 @@ export default class Wsd {
         } catch (e) {
             throw e;
         } finally {
-            doing?.dispose();
+            dispose(statusItem.id);
             this.connecting = false;
         }
     }
@@ -118,7 +118,7 @@ export default class Wsd {
     }
 
     async handleConnect() {
-        const doing = StatusBar.doing('连接中');
+        const statusItem = doing('连接中');
         try {
             if (this.connecting) {
                 throw new Error('正在尝试连接设备中');
@@ -130,7 +130,7 @@ export default class Wsd {
         } catch (e) {
             eprintln('连接设备失败:', e);
         } finally {
-            doing?.dispose();
+            dispose(statusItem.id);
             this.connecting = false;
         }
     }
@@ -250,7 +250,7 @@ export default class Wsd {
 
     private async handleSetRunningProjectsMessage(conn: WebSocket, message: SetRunningProjects) {
         try {
-            StatusBar.running(message.data.projects);
+            running(message.data.projects);
             const newMessage = new SetRunningProjectsResult(message.id, { success: true, message: '' });
             await this.wsClient.send(conn, newMessage);
         } catch (e) {
@@ -317,24 +317,18 @@ export default class Wsd {
 
             const projects = await this.getRunningProjects(conn);
             if (projects.includes(name)) {
-                const doingStop = StatusBar.doing('停止工程中');
-                if (doingStop !== undefined) {
-                    doings.push(doingStop);
-                }
+                const doingStop = doing('停止工程中');
+                doings.push(doingStop);
                 await this.stop(conn, name);
             }
 
-            const doingDelete = StatusBar.doing('清理工程中');
-            if (doingDelete !== undefined) {
-                doings.push(doingDelete);
-            }
+            const doingDelete = doing('清理工程中');
+            doings.push(doingDelete);
             const deletePath = this.workspace.resolveRelProjects(name);
             await this.delete(conn, deletePath);
 
-            const doingUpload = StatusBar.doing('上传工程中');
-            if (doingUpload !== undefined) {
-                doings.push(doingUpload);
-            }
+            const doingUpload = doing('上传工程中');
+            doings.push(doingUpload);
             const workspaceFiles = await this.workspace.getWrokspaceFiles();
             for (const workspaceFile of workspaceFiles) {
                 const file = (await readFile(workspaceFile.absPath)) as Uint8Array;
@@ -342,20 +336,18 @@ export default class Wsd {
                 await this.upload(conn, uploadPath, file);
             }
 
-            const doingRun = StatusBar.doing('运行工程中');
-            if (doingRun !== undefined) {
-                doings.push(doingRun);
-            }
+            const doingRun = doing('运行工程中');
+            doings.push(doingRun);
             await this.run(conn, name);
         } catch (e) {
             eprintln('运行工程失败:', e);
         } finally {
-            doings.forEach(it => it.dispose());
+            doings.forEach(it => dispose(it.id));
         }
     }
 
     async handleStop() {
-        const doing = StatusBar.doing('停止工程中');
+        const statusItem = doing('停止工程中');
         try {
             const conn = await this.getConn();
             const name = this.workspace.getWorkspaceName();
@@ -363,7 +355,7 @@ export default class Wsd {
         } catch (e) {
             eprintln('停止工程失败:', e);
         } finally {
-            doing?.dispose();
+            dispose(statusItem.id);
         }
     }
 
@@ -373,17 +365,13 @@ export default class Wsd {
             const conn = await this.getConn();
             const name = this.workspace.getWorkspaceName();
 
-            const doingDelete = StatusBar.doing('清理工程中');
-            if (doingDelete !== undefined) {
-                doings.push(doingDelete);
-            }
+            const doingDelete = doing('清理工程中');
+            doings.push(doingDelete);
             const deletePath = this.workspace.resolveRelProjects(name);
             await this.delete(conn, deletePath);
 
-            const doingUpload = StatusBar.doing('上传工程中');
-            if (doingUpload !== undefined) {
-                doings.push(doingUpload);
-            }
+            const doingUpload = doing('上传工程中');
+            doings.push(doingUpload);
             const workspaceFiles = await this.workspace.getWrokspaceFiles();
             for (const workspaceFile of workspaceFiles) {
                 const file = (await readFile(workspaceFile.absPath)) as Uint8Array;
@@ -395,12 +383,12 @@ export default class Wsd {
         } catch (e) {
             eprintln('上传工程失败:', e);
         } finally {
-            doings.forEach(it => it.dispose());
+            doings.forEach(it => dispose(it.id));
         }
     }
 
     async handleUploadFile() {
-        const doing = StatusBar.doing('上传中');
+        const statusItem = doing('上传中');
         try {
             const conn = await this.getConn();
             const path = await this.asker.askForSingleFile();
@@ -413,12 +401,12 @@ export default class Wsd {
         } catch (e) {
             eprintln('上传文件失败:', e);
         } finally {
-            doing?.dispose();
+            dispose(statusItem.id);
         }
     }
 
     async handleSnapshot() {
-        const doing = StatusBar.doing('截图中');
+        const statusItem = doing('截图中');
         try {
             if (this.snapshoting) {
                 throw new Error('正在尝试屏幕截图中');
@@ -437,7 +425,7 @@ export default class Wsd {
         } catch (e) {
             eprintln('屏幕截图失败:', e);
         } finally {
-            doing?.dispose();
+            dispose(statusItem.id);
             this.snapshoting = false;
         }
     }

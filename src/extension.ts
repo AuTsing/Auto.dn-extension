@@ -4,10 +4,10 @@ import Wsd from './components/Wsd';
 import Asker from './components/Asker';
 import Registry from './components/Registry';
 import Workspace from './components/Workspace';
-import StatusBar from './components/StatusBar';
 import Storage from './components/Storage';
 import WsClient from './components/WsClient';
 import { Zipper } from './components/Zipper';
+import { handleClickStatusBarItem } from './components/StatusBar';
 
 export function activate(context: Vscode.ExtensionContext) {
     const workspace = new Workspace();
@@ -19,8 +19,6 @@ export function activate(context: Vscode.ExtensionContext) {
     const initializer = new Initializer(context, workspace, storage);
     const zipper = new Zipper(workspace);
 
-    StatusBar.instance = new StatusBar();
-
     registry.register('initializeWorkspace', () => initializer.handleInitWorkspace());
     registry.register('connect', () => wsd.handleConnect());
     registry.register('disconnect', () => wsd.handleDisconnect());
@@ -30,7 +28,7 @@ export function activate(context: Vscode.ExtensionContext) {
     registry.register('uploadFile', () => wsd.handleUploadFile());
     registry.register('snapshot', () => wsd.handleSnapshot());
     registry.register('zip', () => zipper.handleZip());
-    registry.register('clickStatusBarItem', () => StatusBar.instance?.handleClickStatusBarItem());
+    registry.register('clickStatusBarItem', () => handleClickStatusBarItem());
     registry.listenOnDidChangeConfiguration('autodn.enable', () => initializer.handleDidChangeEnable());
 
     initializer.handleDidChangeEnable();

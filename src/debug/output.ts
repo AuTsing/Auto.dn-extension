@@ -1,5 +1,5 @@
+import { format } from 'node:util';
 import { window } from 'vscode';
-import { format } from 'util';
 import { NAME } from '../data/constant';
 
 const { createOutputChannel } = window;

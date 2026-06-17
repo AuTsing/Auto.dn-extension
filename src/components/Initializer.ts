@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { printlnAndShow, eprintln } from '../debug/output';
 import Workspace from './Workspace';
 import Storage from './Storage';
-import StatusBar from './StatusBar';
+import { handleShowStatusBar, handleHideStatusBar } from './StatusBar';
 
 const { executeCommand } = commands;
 
@@ -130,9 +130,9 @@ export default class Initializer {
 
     async handleToggleStatusBar() {
         if (this.storage.getEnable() === true) {
-            StatusBar.instance?.handleShowStatusBar();
+            handleShowStatusBar();
         } else {
-            StatusBar.instance?.handleHideStatusBar();
+            handleHideStatusBar();
         }
     }
 
