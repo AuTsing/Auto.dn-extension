@@ -1,47 +1,37 @@
-import * as Vscode from 'vscode';
-import * as Util from 'util';
+import { LogOutputChannel, window } from 'vscode';
+import { format } from 'util';
 import { NAME } from '../data/constant';
 
-export default class Output {
-    static instance?: Output;
+const { createOutputChannel } = window;
 
-    static println(...args: any[]) {
-        Output.instance?.println(...args);
-    }
+let channel: LogOutputChannel | undefined;
 
-    static printlnAndShow(...args: any[]) {
-        Output.instance?.println(...args);
-        Output.instance?.show();
-    }
+function getChannel(): LogOutputChannel {
+    return (channel ??= createOutputChannel(NAME, { log: true }));
+}
 
-    static wprintln(...args: any[]) {
-        Output.instance?.wprintln(...args);
-    }
+export function println(...args: unknown[]) {
+    const channel = getChannel();
+    const message = format(...args);
+    channel.info(message);
+}
 
-    static eprintln(...args: any[]) {
-        Output.instance?.eprintln(...args);
-    }
+export function printlnAndShow(...args: unknown[]) {
+    const channel = getChannel();
+    const message = format(...args);
+    channel.info(message);
+    channel.show();
+}
 
-    private readonly channel: Vscode.LogOutputChannel;
+export function wprintln(...args: unknown[]) {
+    const channel = getChannel();
+    const message = format(...args);
+    channel.warn(message);
+}
 
-    constructor() {
-        this.channel = Vscode.window.createOutputChannel(NAME, { log: true });
-    }
-
-    println(...args: any[]) {
-        this.channel.info(Util.format(...args));
-    }
-
-    wprintln(...args: any[]) {
-        this.channel.warn(Util.format(...args));
-    }
-
-    eprintln(...args: any[]) {
-        this.channel.error(Util.format(...args));
-        this.show();
-    }
-
-    show() {
-        this.channel.show(true);
-    }
+export function eprintln(...args: unknown[]) {
+    const channel = getChannel();
+    const message = format(...args);
+    channel.error(message);
+    channel.show();
 }
