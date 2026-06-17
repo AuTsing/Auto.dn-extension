@@ -2,7 +2,7 @@ import { ExtensionContext, commands } from 'vscode';
 import { access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { printlnAndShow, eprintln } from '../debug/output';
+import { printlnAndShow, eprintln } from '../ui/output';
 import Workspace from './Workspace';
 import Storage from './Storage';
 import { handleShowStatusBar, handleHideStatusBar } from '../ui/status_bar';

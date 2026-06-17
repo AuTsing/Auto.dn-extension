@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { window, commands, StatusBarAlignment } from 'vscode';
-import { eprintln } from '../debug/output';
+import { eprintln } from './output';
 import { NAME, NS } from '../data/constant';
 
 const { createStatusBarItem } = window;

@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { basename, resolve } from 'node:path';
 import { WebSocket } from 'ws';
-import { println, wprintln, eprintln } from '../debug/output';
+import { println, wprintln, eprintln } from '../ui/output';
 import Asker from './Asker';
 import Workspace from './Workspace';
 import { StatusItem, dispose, connected, disconnect, doing, running } from '../ui/status_bar';
